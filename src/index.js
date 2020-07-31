@@ -1,17 +1,25 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
 import App from './App';
-import * as serviceWorker from './serviceWorker';
+
+import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom'
+import { mainRoutes } from './routes'
+
+import { Provider } from 'react-redux'
+import store from './store/index'
 
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <Provider store={store}>
+    <Router>
+      <Switch>
+        {mainRoutes.map(route => <Route key={route.path} {...route} />)}
+
+        <Route path="/admin" render={routeProps => <App {...routeProps} />} />
+
+        <Redirect to="/admin" from="/" />
+        <Redirect to="/404" />
+      </Switch>
+    </Router>
+  </Provider>,
   document.getElementById('root')
 );
-
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();

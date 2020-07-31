@@ -1,0 +1,52 @@
+.topic-info-wrapper {
+    .list-item-wrapper {
+        word-break: break-word;
+
+        .item-filename {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2d3436;
+            margin-bottom: 5px;
+        }
+
+        .item-filepath {
+            word-break: break-all;
+            margin: 3px 0 5px;
+
+            span {
+                color: #1890ff;
+            }
+        }
+
+        .item-user-meta {
+            display: flex;
+            justify-content: space-between;
+
+            .item-upload-user {
+                span {
+                    color: #636e72;
+                }
+            }
+
+            .item-upload-ip {
+                span {
+                    color: #1890ff;
+                }
+            }
+        }
+
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3px;
+
+            .item-count {
+                span {
+                    font-size: 15px;
+                    font-weight: 600;
+                    color: #2d3436;
+                }
+            }
+        }
+    }
+}

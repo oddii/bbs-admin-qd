@@ -1,0 +1,15 @@
+.login-wrapper{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: #f0f2f5;
+
+    .login-container{
+        width: 320px;
+
+        .btn-login{
+            margin-top: 15px;
+        }
+    }
+}

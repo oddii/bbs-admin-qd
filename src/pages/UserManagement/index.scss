@@ -1,0 +1,88 @@
+.user-center-wrapper {
+    height: 100%;
+
+    .user-meta-wrapper {
+
+        .user-meta {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+
+            .meta-avatar {
+                margin-bottom: 24px;
+            }
+
+            .meta-username {
+                font-size: 20px;
+                font-weight: 500;
+                color: rgba(0, 0, 0, .85);
+            }
+
+            .meta-signature{
+                margin-top: 10px;
+            }
+        }
+    }
+
+    .replyed-content {
+        position: relative;
+        padding: 20px;
+        background-color: #f0f2f5;
+        .border-topleft{
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 25px;
+            height: 3px;
+            background-color: #1890ff;
+        }
+        .border-topleft2{
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 25px;
+            background-color: #1890ff;
+        }
+        .border-bottomright{
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 25px;
+            height: 3px;
+            background-color: #1890ff;
+        }
+        .border-bottomright2{
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 3px;
+            height: 25px;
+            background-color: #1890ff;
+        }
+    }
+
+    .reply-content {
+        margin: 15px 0 4px 0;
+        font-size: 15px;
+        font-weight: 600;
+    }
+}
+
+.user-settings-wrapper {
+    height: 100%;
+
+    .user-avatar-wrapper {
+        margin-left: 80px;
+
+        .user-avatar-container {
+            .user-avatar {
+                display: block;
+                margin: 8px 0 20px;
+                width: 144px;
+                height: 144px;
+            }
+        }
+    }
+}

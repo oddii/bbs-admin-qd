@@ -1,0 +1,35 @@
+.info-link-wrapper {
+    height: 100%;
+
+    .list-item-wrapper {
+        display: flex;
+
+        .item-logo{
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin-right: 15px;
+            img{
+                border-radius: 50%;
+            }
+        }
+
+        .list-item-meta {
+            word-break: break-word;
+            .item-name {
+                font-size: 15px;
+                font-weight: 600;
+            }
+
+            .item-url {
+                margin: 10px 0 7px;
+                font-size: 14px;
+                color: #1890ff;
+            }
+
+            .item-time{
+                font-size: 13px;
+            }
+        }
+    }
+}
