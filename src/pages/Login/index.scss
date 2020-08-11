@@ -1,15 +1,21 @@
-.login-wrapper{
+.login-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
     background-color: #f0f2f5;
 
-    .login-container{
+    .login-container {
         width: 320px;
 
-        .btn-login{
-            margin-top: 15px;
+        .btn-login {
+            margin-top: 10px;
+        }
+
+        .ant-input-group-addon {
+            min-width: 100px !important;
+            padding: 0 !important;
+            cursor: pointer;
         }
     }
 }

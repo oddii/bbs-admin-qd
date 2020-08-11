@@ -6,9 +6,11 @@ import {
 import {} from 'redux-thunk'
 
 import commonReducer from './reducers/common'
+import userReducer from './reducers/user'
 
 const reducers = combineReducers({
-    commonReducer
+    commonReducer,
+    userReducer
 })
 
 const store = createStore(reducers)

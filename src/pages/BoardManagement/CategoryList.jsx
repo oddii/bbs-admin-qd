@@ -1,5 +1,9 @@
 import React, { useState } from 'react'
-import { Card, Table, Divider, Button, Badge, Drawer, Form, Input, InputNumber, Select, message, Popconfirm } from 'antd'
+import {
+    Card, Table, Divider, Button, Badge, Drawer,
+    Form, Input, InputNumber, Select, message, Popconfirm,
+    Dropdown, Menu
+} from 'antd'
 
 import { DRAWER_TYPE } from '../../constant'
 
@@ -101,8 +105,8 @@ function CategoryList() {
                             else if (visible === 0) return <Badge status="error" text="隐藏" title="隐藏" />
                         }} />
                     <Column title="顺序" dataIndex="order" key="order" align="center" width={65} />
-                    <Column title="创建时间" dataIndex="create_time" key="create_time" align="center" width={180} />
-                    <Column title="更新时间" dataIndex="update_time" key="update_time" align="center" width={180} />
+                    <Column title="创建时间" dataIndex="createTime" key="createTime" align="center" width={180} />
+                    <Column title="更新时间" dataIndex="updateTime" key="updateTime" align="center" width={180} />
                     <Column
                         title="操作"
                         key="action"
@@ -110,7 +114,19 @@ function CategoryList() {
                         width={120}
                         render={(text, record) => (
                             <>
-                                <span className="btn-option" onClick={() => handleItemUpdate(record)}>修改</span>
+                                <Dropdown
+                                    overlay={
+                                        <Menu>
+                                            <Menu.Item>
+                                                <div>分区版主</div>
+                                            </Menu.Item>
+
+                                            <Menu.Item style={{ textAlign: 'center' }}>
+                                                <div onClick={() => handleItemUpdate(record.id)}>编辑</div>
+                                            </Menu.Item>
+                                        </Menu>}>
+                                    <span className="btn-option">更多</span>
+                                </Dropdown>
 
                                 <Divider type="vertical" />
 

@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { Layout as AntdLayout, Breadcrumb } from 'antd';
+import { Layout as AntdLayout, Breadcrumb, message } from 'antd';
 import { SnippetsOutlined, FileOutlined } from '@ant-design/icons';
 import { useHistory } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
+
+import userApi from '../api/user'
+import { getData } from '../utils/apiMethods'
 
 import Header from './components/Header'
 import Footer from './components/Footer'
@@ -47,6 +51,22 @@ function Layout(props) {
         }
         setBreadcrumbList(list)
     }
+
+    const getUserInfo = () => {
+        const userId = localStorage.getItem('userId')
+        if (!userId) {
+            message.error('您尚未登录，请先登录再继续操作')
+            return history.push('/login')
+        } else {
+            getData(userApi.getUserInfo, userId).then(result => {
+                console.log(result);
+            })
+        }
+    }
+
+    useEffect(() => {
+        getUserInfo()
+    },[getUserInfo])
 
     useEffect(() => {
         setPathname(history.location.pathname)

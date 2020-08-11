@@ -19,17 +19,19 @@
                 color: rgba(0, 0, 0, .85);
             }
 
-            .meta-signature{
+            .meta-signature {
                 margin-top: 10px;
             }
         }
+
     }
 
     .replyed-content {
         position: relative;
         padding: 20px;
         background-color: #f0f2f5;
-        .border-topleft{
+
+        .border-topleft {
             position: absolute;
             left: 0;
             top: 0;
@@ -37,7 +39,8 @@
             height: 3px;
             background-color: #1890ff;
         }
-        .border-topleft2{
+
+        .border-topleft2 {
             position: absolute;
             left: 0;
             top: 0;
@@ -45,7 +48,8 @@
             height: 25px;
             background-color: #1890ff;
         }
-        .border-bottomright{
+
+        .border-bottomright {
             position: absolute;
             right: 0;
             bottom: 0;
@@ -53,7 +57,8 @@
             height: 3px;
             background-color: #1890ff;
         }
-        .border-bottomright2{
+
+        .border-bottomright2 {
             position: absolute;
             right: 0;
             bottom: 0;

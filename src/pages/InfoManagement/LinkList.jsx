@@ -1,32 +1,30 @@
 import React, { useState } from 'react'
-import { Card, List, Button, Popconfirm, message, Drawer, Form, Input } from 'antd'
+import { Card, List, Button, Popconfirm, message, Drawer, Form, Input, InputNumber } from 'antd'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 
 import './index.scss'
 import { DRAWER_TYPE } from '../../constant'
-
-const data = []
-for (let i = 0; i < 10; i++) {
-  data.push({
-    id: i,
-    name: `友情链接${i}`,
-    url: 'https://ant.design/components/table-cn/',
-    logo_url: 'https://gw.alipayobjects.com/zos/rmsportal/WdGqmHpayyMjiEhcKoVE.png',
-    order: Math.floor(Math.random() * 256),
-    description: '这是一条友情链接',
-    create_time: new Date().toLocaleString(),
-    update_time: new Date().toLocaleString(),
-    delete_time: new Date().toLocaleString()
-  })
-}
-
+import { getData } from '../../utils/apiMethods'
+import linkApi from '../../api/link'
+import { useEffect } from 'react'
 
 function InfoLinkList() {
 
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [drawerType, setDrawerType] = useState('')
+  const [linkList, setLinkList] = useState([])
   const [linkInfo, setLinkInfo] = useState({})
   const [linkUpdateForm] = Form.useForm()
+
+  const getLinkList = () => {
+    getData(linkApi.getLinkList).then(result => {
+      const { code, data } = result.data
+      if (code !== 200) return message.error()
+      setLinkList(data)
+    }).catch(error => {
+      console.log(error);
+    })
+  }
 
   /**
    * 设置表单初始化数值
@@ -91,6 +89,10 @@ function InfoLinkList() {
       })
   }
 
+  useEffect(() => {
+    getLinkList()
+  }, [])
+
   return (
     <>
       <Card
@@ -108,13 +110,7 @@ function InfoLinkList() {
             xl: 3,
             xxl: 4
           }}
-          dataSource={data}
-          pagination={{
-            total: 85,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `Total ${total} items`
-          }}
+          dataSource={linkList}
           renderItem={item => (
             <List.Item>
               <Card
@@ -133,13 +129,14 @@ function InfoLinkList() {
               >
                 <div className="list-item-wrapper">
                   <div className="item-logo">
-                    <img src={item.logo_url} alt="" style={{ width: '48px', height: '48px' }} />
+                    <img src={item.iconUrl} alt="" style={{ width: '48px', height: '48px' }} />
                   </div>
                   <div className="list-item-meta">
                     <div className="item-name">{item.name}</div>
+                    <div className="item-description">{item.description}</div>
                     <div className="item-url">{item.url}</div>
-                    <div className="item-time">创建时间：{item.create_time}</div>
-                    <div className="item-time">更新时间：{item.update_time}</div>
+                    <div className="item-time">创建时间：{item.createTime}</div>
+                    <div className="item-time">更新时间：{item.updateTime}</div>
                   </div>
                 </div>
               </Card>
@@ -175,6 +172,14 @@ function InfoLinkList() {
           </Form.Item>
 
           <Form.Item
+            name="description"
+            label="链接描述"
+            rules={[{ required: true, message: '请输入链接描述!' }]}
+          >
+            <Input placeholder="请输入链接描述" />
+          </Form.Item>
+
+          <Form.Item
             name="url"
             label="链接地址"
             rules={[{ required: true, message: '请输入链接地址!' }]}
@@ -183,11 +188,19 @@ function InfoLinkList() {
           </Form.Item>
 
           <Form.Item
-            name="logo_url"
+            name="iconUrl"
             label="logo地址"
             rules={[{ required: true, message: '请输入logo地址' }]}
           >
             <Input placeholder="请输入logo地址" />
+          </Form.Item>
+
+          <Form.Item
+            name="order"
+            label="显示顺序"
+            rules={[{ required: true, message: '请输入显示顺序!' }]}
+          >
+            <InputNumber min={1} max={100} />
           </Form.Item>
         </Form>
       </Drawer>

@@ -13,6 +13,7 @@ function Header() {
     const history = useHistory()
     const dispatch = useDispatch()
     const isCollapsed = useSelector(state => state.commonReducer.isCollapsed)
+    const userInfo = useSelector(state => state.userReducer)
 
     /**
      * @method 信息栏Dropdown菜单点击事件
@@ -76,7 +77,7 @@ function Header() {
                     <div className="header-meta">
                         <Avatar src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png" />
                         <div className="meta-usename">
-                            odd
+                            {userInfo.nickname}
                         </div>
                     </div>
                 </Dropdown>

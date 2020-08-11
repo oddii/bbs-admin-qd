@@ -21,8 +21,15 @@
                 font-weight: 600;
             }
 
+            .item-description{
+                width: 250px;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
+            }
+
             .item-url {
-                margin: 10px 0 7px;
+                margin: 4px 0 7px;
                 font-size: 14px;
                 color: #1890ff;
             }
