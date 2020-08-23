@@ -1,33 +1,167 @@
-import React, { useState } from 'react'
-import { Card, Table, Dropdown, Menu, Avatar, Button, Drawer, Form, Input, Select, message, Popconfirm, Divider, Badge } from 'antd'
+import React, { useState, useEffect } from 'react'
+import {
+    Card, Table, Dropdown, Menu, Avatar, Button, Drawer, Tag,
+    Form, Input, Select, message, Popconfirm, Divider, Badge,
+    AutoComplete, Cascader, Col, Row, DatePicker, Statistic, Switch
+} from 'antd'
+import moment from 'moment'
 
+import { debounce } from '../../utils/utils'
+import userApi from '../../api/user'
+import { getData } from '../../utils/apiMethods'
 import '../../index.scss'
 
 const { Column } = Table;
 const { Option } = Select
-
-const data = []
-for (let i = 0; i < 10; i++) {
-    let index = Math.floor(Math.random() * 3)
-    data.push({
-        id: i,
-        username: `user${i}`,
-        nickname: `用户${i}`,
-        email: `79352318${i}@qq.com`,
-        avatar_path: 'https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png',
-        last_login_time: new Date().toLocaleString(),
-        last_login_ip: '111.111.111.111',
-        sex: ([0, 1, 2])[index],
-        signature: '这个人很懒，什么都没留下来',
-        register_time: new Date().toLocaleString(),
-        update_time: new Date().toLocaleString()
-    })
-}
+/**
+ * 渲染自动完成选项的 item
+ * @param {自动完成选项} item 
+ */
+const renderAutoCompleteItem = item => ({
+    value: item.username,
+    label: (
+        <div
+            style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+            }}
+        >
+            <span>{item.username}</span>
+            <span>{item.nickname}</span>
+        </div>
+    ),
+})
 
 function UserList() {
 
-    const [drawerVisible, setDrawerVisible] = useState(false)
     const [userForm] = Form.useForm()
+    const [searchForm] = Form.useForm()
+    const [drawerVisible, setDrawerVisible] = useState(false)
+
+    const [autoCompleteList, setAutoCompleteList] = useState([])
+    const [username, setUsername] = useState('')
+    const [userType, setUsertype] = useState('')
+
+    const [userList, setUserList] = useState([])
+    const [currentPage, setCurrentPage] = useState(0)
+    const [pageSize, setPageSize] = useState(0)
+    const [total, setTotal] = useState(0)
+
+    /**
+     * 通用 useState 的 Setter
+     * @param {属性字段} property 
+     */
+    const commonSetter = property => {
+        const obj = {
+            // boardId: setBoardId,
+            // username: setUsername,
+            // keyword: setKeyword,
+            // type: setType,
+            // sort: setSort,
+            // from: setFrom,
+            // to: setTo
+        }
+        return obj[property]
+    }
+
+    /**
+     * 获取用户列表
+     * @param {参数} params 
+     */
+    const getUserList = (params = {}) => {
+        getData(userApi.getUserList, params).then(result => {
+            const { code, data } = result.data
+            if (code !== 200) return message.error('')
+            const { content, currentPage, pageSize, totalRecords } = data
+            setUserList(content)
+            setCurrentPage(currentPage)
+            setPageSize(pageSize)
+            setTotal(totalRecords)
+        })
+    }
+
+    /**
+     * 自动完成输入框输入事件
+     * @param {自动完成输入框值} value 
+     */
+    const handleAutoComplete = value => {
+        getData(userApi.getUsernameList, { user: value })
+            .then(result => {
+                let { code, data } = result.data
+                if (code !== 200) return message.error('')
+                data = data.map(item => renderAutoCompleteItem(item))
+                setAutoCompleteList(data)
+            })
+    }
+
+    /**
+     * 表单搜索事件
+     * @param {表单值} values 
+     */
+    const handleSearch = values => {
+        console.log(values);
+        const params = {}
+        for (let key in values) {
+            if (values.hasOwnProperty(key)) {
+                if (key === 'from' || key === 'to') {
+                    if (values[key]) {
+                        params[key] = moment(values[key]).format('YYYY-MM-DD hh:mm:ss')
+                    }
+                } else if (key === 'boardId') {
+                    if (values[key]) {
+                        params[key] = values[key][values[key].length - 1]
+                    }
+                } else {
+                    params[key] = values[key]
+                }
+                commonSetter(key)(values[key])
+            }
+        }
+        params.page = currentPage
+        params.count = pageSize
+        getUserList(params)
+    }
+
+    /**
+     * 表单重置事件
+     */
+    const handleReset = () => {
+        setAutoCompleteList([])
+        setUsername('')
+        setUsertype('')
+        searchForm.resetFields()
+    }
+
+    /**
+     * 页数与页面大小改变事件
+     * @param {参数} params 
+     */
+    const handlePageChange = (params = {}) => {
+        const searchFormOldValue = {
+            // boardId,
+            // username,
+            // filename: keyword,
+            // type,
+            // sort,
+            // from,
+            // to
+        }
+        searchForm.setFieldsValue(searchFormOldValue)
+        for (let key in searchFormOldValue) {
+            if (searchFormOldValue.hasOwnProperty(key)) {
+                if (searchFormOldValue[key]) {
+                    if (key === 'from' || key === 'to') {
+                        params[key] = moment(searchFormOldValue[key]).format('YYYY-MM-DD hh:mm:ss')
+                    } else if (key === 'boardId') {
+                        params[key] = searchFormOldValue[key][searchFormOldValue[key].length - 1]
+                    } else {
+                        params[key] = searchFormOldValue[key]
+                    }
+                }
+            }
+        }
+        getUserList(params)
+    }
 
     const handleItemInsert = () => {
         userForm.setFieldsValue({
@@ -48,7 +182,8 @@ function UserList() {
     }
 
     const handleDrawerConfirm = () => {
-        userForm.validateFields(['name', 'description', 'visible', 'order'])
+        userForm.validateFields(['username', 'nickname', 'password', 'confirmPassword', 'email', 'admin',
+            'banVisit', 'banCreateTopic', 'banReply', 'banUploadAttachment', 'banDownloadAttachment'])
             .then(result => {
                 console.log(result);
             })
@@ -59,35 +194,188 @@ function UserList() {
             })
     }
 
+    useEffect(() => {
+        getUserList({
+            page: 1,
+            count: 10
+        })
+    }, [])
+
     return (
         <>
             <Card
                 title="用户列表"
-                extra={<Button onClick={handleItemInsert}>新增用户</Button>} >
+                extra={<Button onClick={handleItemInsert}>新建用户</Button>}>
+                <Form
+                    form={searchForm}
+                    onFinish={handleSearch}
+                >
+                    <Row gutter={24}>
+                        <Col span={6} >
+                            <Form.Item name='username' label='上传用户' >
+                                <AutoComplete
+                                    allowClear
+                                    dropdownMatchSelectWidth={250}
+                                    options={autoCompleteList}
+                                    onSearch={debounce(handleAutoComplete, 500)}
+                                    placeholder="请输入用户名/用户昵称"
+                                />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={6} >
+                            <Form.Item name='userType' label='用户类型'>
+                                <Select placeholder="请选择用户类型" allowClear>
+                                    <Option value="user">普通用户</Option>
+                                    <Option value="boardAdmin">版主</Option>
+                                    <Option value="categoryAdmin">分区版主</Option>
+                                    <Option value="superBoardAdmin">超级版主</Option>
+                                    <Option value="admin">管理员</Option>
+                                    <Option value="banVisit">禁止登录</Option>
+                                    <Option value="banReply">禁止发帖/回帖</Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={24}>
+                        {/* <Col span={6} >
+                            <Form.Item name='from' label='开始时间' style={{ marginBottom: 0 }}>
+                                <DatePicker showTime />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={6} >
+                            <Form.Item name='to' label='结束时间' style={{ marginBottom: 0 }}>
+                                <DatePicker showTime />
+                            </Form.Item>
+                        </Col> */}
+
+                        <Col span={24} style={{ textAlign: 'right' }}>
+                            <Button type="primary" htmlType="submit">
+                                搜索
+                            </Button>
+                            <Button
+                                style={{ margin: '0 8px' }}
+                                onClick={() => handleReset()}>
+                                清空
+                            </Button>
+                        </Col>
+                    </Row>
+                </Form>
+            </Card>
+
+            <Card
+                style={{ marginTop: 24 }}>
 
                 <Table
                     rowKey="id"
-                    dataSource={data}
+                    dataSource={userList}
                     expandable={{
-                        expandedRowRender: record => <p style={{ margin: 0 }}>{record.signature}</p>,
+                        expandedRowRender: record => {
+                            return <Card style={{ fontSize: 14 }}>
+                                <Row>
+                                    <Col span={21}>
+                                        <Row style={{ marginBottom: 14 }}>
+                                            最近登录Ip：{record.lastLoginIp}
+                                        </Row>
+                                        <Row style={{ marginBottom: 14 }}>
+                                            个性签名：{record.signature}
+                                        </Row>
+                                        <Row>
+                                            <Col>
+                                                管理板块：{
+                                                    record.boardAdmin.map(item => <Tag closable key={item.id} color="processing"
+                                                        style={{ fontSize: 14, margin: '0 12px 14px 0' }}>
+                                                        {item.name}
+                                                    </Tag>)
+                                                }
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col>
+                                                管理分区：{
+                                                    record.categoryAdmin.map(item => <Tag closable key={item.id} color="warning"
+                                                        style={{ fontSize: 14, margin: '0 12px 14px 0' }}>
+                                                        {item.name}
+                                                    </Tag>)
+                                                }
+                                            </Col>
+                                        </Row>
+                                    </Col>
+                                    <Col span={3}>
+                                        <Row>
+                                            {
+                                                record.superBoardAdmin
+                                                    ? <Col span={12} style={{ marginBottom: 10 }}>
+                                                        <Badge status="success" text="超级版主" />
+                                                    </Col>
+                                                    : <></>
+                                            }
+                                            {
+                                                record.admin
+                                                    ? <Col span={12} style={{ marginBottom: 10 }}>
+                                                        <Badge status="processing" text="管理员" />
+                                                    </Col>
+                                                    : <></>
+                                            }
+                                        </Row>
+                                        <Row>
+                                            <Col span={12}><Statistic title="发帖总数" value={record.topicCount} /></Col>
+                                            <Col span={12}><Statistic title="回复总数" value={record.replyCount} /></Col>
+                                        </Row>
+                                        <Row style={{ marginBottom: 7, marginTop: 7 }}>
+                                            禁止登录：<Switch defaultChecked />
+                                        </Row>
+                                        <Row style={{ marginBottom: 7 }}>
+                                            禁止发帖：<Switch defaultChecked />
+                                        </Row>
+                                        <Row style={{ marginBottom: 7 }}>
+                                            禁止回复：<Switch defaultChecked />
+                                        </Row>
+                                        <Row style={{ marginBottom: 7 }}>
+                                            禁止上传附件：<Switch defaultChecked />
+                                        </Row>
+                                        <Row>
+                                            禁止下载附件：<Switch defaultChecked />
+                                        </Row>
+                                    </Col>
+                                </Row>
+                            </Card>
+                        },
                         rowExpandable: record => record.username !== 'Not Expandable',
                     }}
                     pagination={{
-                        total: 85,
+                        current: currentPage,
+                        pageSize: pageSize,
+                        total: total,
                         showSizeChanger: true,
                         showQuickJumper: true,
-                        showTotal: (total) => `Total ${total} items`
+                        showTotal: (total) => `Total ${total} items`,
+                        onChange: (currentPage, pageSize) => handlePageChange({ page: currentPage, count: pageSize })
                     }}>
                     <Column
                         title="头像"
-                        dataIndex="avatar_path"
-                        key="avatar_path"
+                        dataIndex="avatarPath"
+                        key="avatarPath"
                         align="center"
                         width={70}
-                        render={path => <Avatar src={path} />} />
+                        render={avatarPath => <Avatar src={avatarPath} />} />
                     <Column title="用户名" dataIndex="username" key="username" align="center" width={180} ellipsis />
                     <Column title="昵称" dataIndex="nickname" key="nickname" align="center" width={180} ellipsis />
-                    <Column title="绑定邮箱" dataIndex="email" key="age" align="center" ellipsis />
+                    <Column title="用户类型" dataIndex="userType" key="userType" align="center" width={150} />
+                    <Column title="绑定邮箱" dataIndex="email" key="email" align="center" ellipsis />
+                    <Column
+                        title="是否激活"
+                        dataIndex="emailVerified"
+                        key="emailVerified"
+                        align="center"
+                        width={100}
+                        render={emailVerified => {
+                            return emailVerified
+                                ? <Tag color="success">已激活</Tag>
+                                : <Tag color="error">未激活</Tag>
+                        }} />
                     <Column
                         title="性别"
                         dataIndex="sex"
@@ -99,10 +387,8 @@ function UserList() {
                             else if (sex === 1) return <Badge status="error" text="女生" />
                             else if (sex === 2) return <Badge status="default" text="保密" />
                         }} />
-                    <Column title="上次登录ip地址" dataIndex="last_login_ip" key="last_login_ip" align="center" width={150} />
-                    <Column title="上次登录时间" dataIndex="last_login_time" key="last_login_time" align="center" width={180} />
-                    <Column title="注册时间" dataIndex="register_time" key="register_time" align="center" width={180} />
-                    <Column title="更新时间" dataIndex="update_time" key="update_time" align="center" width={180} />
+                    <Column title="注册时间" dataIndex="registerTime" key="registerTime" align="center" width={180} />
+                    <Column title="最近登录时间" dataIndex="lastLoginTime" key="lastLoginTime" align="center" width={180} />
                     <Column
                         title="操作"
                         key="action"
@@ -155,7 +441,10 @@ function UserList() {
 
                 <Form
                     form={userForm}
-                    initialValues={{ order: 1 }}
+                    initialValues={{
+                        banVisit: false, banCreateTopic: false, banReply: false, admin: false,
+                        banUploadAttachment: false, banDownloadAttachment: false
+                    }}
                     hideRequiredMark
                 >
                     <Form.Item
@@ -204,42 +493,71 @@ function UserList() {
                     </Form.Item>
 
                     <Form.Item
-                        name="sex"
-                        label="用户性别"
-                        rules={[{ required: true, message: '请选择用户性别!' }]}
+                        name="admin"
+                        label="是否为管理员"
+                        rules={[{ required: true, message: '请选择是否为管理员!' }]}
                     >
                         <Select style={{ width: '88px' }}>
-                            <Option value="0">男生</Option>
-                            <Option value="1">女生</Option>
-                            <Option value="2">保密</Option>
+                            <Option value={true}>是</Option>
+                            <Option value={false}>否</Option>
                         </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                        name="signature"
-                        label="个人签名"
-                        rules={[{ type: 'string', max: 500, message: '个人签名不能超过500个字符！' }]}
-                    >
-                        <Input.TextArea placeholder="请输入个人签名" autoSize={{ minRows: 2, maxRows: 8 }} />
                     </Form.Item>
 
                     <Divider />
 
                     <Form.Item
-                        name="password_hint_question"
-                        label="提示问题"
-                        rules={[{ type: 'string', max: 40, message: '找回密码提示问题不能超过40个字符！' }]}
+                        name="banVisit"
+                        label="是否禁止登录"
+                        rules={[{ required: true, message: '请选择是否禁止登录!' }]}
                     >
-                        <Input.TextArea placeholder="请输入找回密码提示问题（找回密码用）" autoSize={{ minRows: 2, maxRows: 8 }} />
+                        <Select style={{ width: '88px' }}>
+                            <Option value={true}>是</Option>
+                            <Option value={false}>否</Option>
+                        </Select>
                     </Form.Item>
 
                     <Form.Item
-                        name="password_hint_answer"
-                        label="问题答案"
-                        rules={[
-                            { type: 'string', max: 40, message: '找回密码问题答案不能超过40个字符！' }]}
+                        name="banCreateTopic"
+                        label="是否禁止发帖"
+                        rules={[{ required: true, message: '请选择是否禁止发帖!' }]}
                     >
-                        <Input.TextArea placeholder="请输入找回密码问题答案（找回密码用）" autoSize={{ minRows: 2, maxRows: 8 }} />
+                        <Select style={{ width: '88px' }}>
+                            <Option value={true}>是</Option>
+                            <Option value={false}>否</Option>
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        name="banReply"
+                        label="是否禁止回复"
+                        rules={[{ required: true, message: '请选择是否禁止回复!' }]}
+                    >
+                        <Select style={{ width: '88px' }}>
+                            <Option value={true}>是</Option>
+                            <Option value={false}>否</Option>
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        name="banUploadAttachment"
+                        label="是否禁止上传附件"
+                        rules={[{ required: true, message: '请选择是是否禁止上传附件!' }]}
+                    >
+                        <Select style={{ width: '88px' }}>
+                            <Option value={true}>是</Option>
+                            <Option value={false}>否</Option>
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        name="banDownloadAttachment"
+                        label="是否禁止下载附件"
+                        rules={[{ required: true, message: '请选择是是否禁止下载附件!' }]}
+                    >
+                        <Select style={{ width: '88px' }}>
+                            <Option value={true}>是</Option>
+                            <Option value={false}>否</Option>
+                        </Select>
                     </Form.Item>
                 </Form>
             </Drawer>

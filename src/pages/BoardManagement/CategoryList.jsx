@@ -1,40 +1,55 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     Card, Table, Divider, Button, Badge, Drawer,
     Form, Input, InputNumber, Select, message, Popconfirm,
-    Dropdown, Menu
+    Dropdown, Menu, Modal, List, Avatar
 } from 'antd'
 
 import { DRAWER_TYPE } from '../../constant'
+import categoryApi from '../../api/category'
+import { getData } from '../../utils/apiMethods'
 
 const { Column } = Table;
 
-const data = []
-for (let i = 0; i < 10; i++) {
-    data.push({
-        id: i,
-        name: `分区${i}`,
-        description: `这是一个新的分区${i}`,
-        visible: Math.floor(Math.random() * 2),
-        order: Math.floor(Math.random() * 100 + 1),
-        create_time: new Date().toLocaleString(),
-        update_time: new Date().toLocaleString(),
-        delete_time: new Date().toLocaleString()
-    })
-}
-
 function CategoryList() {
 
+    const [modalVisible, setModalVisible] = useState(false)
     const [drawerVisible, setDrawerVisible] = useState(false)
+    const [categoryList, setCategoryList] = useState([])
+    const [currentPage, setCurrentPage] = useState(0)
+    const [pageSize, setPageSize] = useState(0)
+    const [total, setTotal] = useState(0)
     const [categoryInfo, setCategoryInfo] = useState({})
     const [drawerType, setDrawerType] = useState('')
     const [categoryForm] = Form.useForm()
+
+    const getCategoryList = (
+        page = 1,
+        count = 10
+    ) => {
+        getData(categoryApi.getCategoryList, {
+            page,
+            count
+        }).then(result => {
+            const { code, data } = result.data
+            if (code !== 200) return message.error('')
+            setCategoryList(data.list)
+            setCurrentPage(data.page)
+            setPageSize(data.count)
+            setTotal(data.total)
+        })
+    }
 
     const setFormInitValues = (drawerType, initValues) => {
         setDrawerType(drawerType)
         setCategoryInfo(initValues)
         categoryForm.setFieldsValue(initValues)
         setDrawerVisible(true)
+    }
+
+    const handleModalShow = item => {
+        setCategoryInfo(item)
+        setModalVisible(true)
     }
 
     const handleItemInsert = () => {
@@ -71,6 +86,10 @@ function CategoryList() {
             })
     }
 
+    useEffect(() => {
+        getCategoryList()
+    }, [])
+
     return (
         <>
             <Card
@@ -79,12 +98,15 @@ function CategoryList() {
 
                 <Table
                     rowKey="id"
-                    dataSource={data}
+                    dataSource={categoryList}
                     pagination={{
-                        total: 85,
+                        current: currentPage,
+                        pageSize: pageSize,
+                        total: total,
                         showSizeChanger: true,
                         showQuickJumper: true,
-                        showTotal: (total) => `Total ${total} items`
+                        showTotal: (total) => `Total ${total} items`,
+                        onChange: (currentPage, pageSize) => getCategoryList(currentPage, pageSize)
                     }}>
                     <Column
                         title="#"
@@ -101,8 +123,8 @@ function CategoryList() {
                         align="center"
                         width={120}
                         render={visible => {
-                            if (visible === 1) return <Badge status="processing" text="显示" title="显示" />
-                            else if (visible === 0) return <Badge status="error" text="隐藏" title="隐藏" />
+                            return visible ? <Badge status="processing" text="显示" title="显示" />
+                                : <Badge status="error" text="隐藏" title="隐藏" />
                         }} />
                     <Column title="顺序" dataIndex="order" key="order" align="center" width={65} />
                     <Column title="创建时间" dataIndex="createTime" key="createTime" align="center" width={180} />
@@ -118,11 +140,11 @@ function CategoryList() {
                                     overlay={
                                         <Menu>
                                             <Menu.Item>
-                                                <div>分区版主</div>
+                                                <div onClick={() => handleModalShow(record)}>分区版主</div>
                                             </Menu.Item>
 
                                             <Menu.Item style={{ textAlign: 'center' }}>
-                                                <div onClick={() => handleItemUpdate(record.id)}>编辑</div>
+                                                <div onClick={() => handleItemUpdate(record)}>编辑</div>
                                             </Menu.Item>
                                         </Menu>}>
                                     <span className="btn-option">更多</span>
@@ -143,6 +165,24 @@ function CategoryList() {
                     />
                 </Table>
             </Card >
+
+            <Modal
+                title={categoryInfo.name + ' 分区的版主列表'}
+                visible={modalVisible}
+                maskClosable={false}
+                closable={false}
+                footer={<Button onClick={() => setModalVisible(false)}>关闭</Button>}
+            >
+                <List
+                    dataSource={categoryInfo.categoryAdmin}
+                    renderItem={item => (<List.Item actions={[<Button type="link" danger>删除</Button>]}>
+                        <List.Item.Meta
+                            avatar={<Avatar style={{ color: '#1890ff', backgroundColor: '#e6f7ff' }}>{item.nickname[0]}</Avatar>}
+                            title={item.nickname}
+                            description={'分区版主'}
+                        /></List.Item>)}
+                />
+            </Modal>
 
             <Drawer
                 title={drawerType === DRAWER_TYPE.INSERT ? '新建分区' : '修改分区'}
@@ -187,7 +227,7 @@ function CategoryList() {
                     >
                         <Select
                             style={{ width: '88px' }}
-                            options={[{ label: '显示', value: 1 }, { label: '隐藏', value: 0 }]} />
+                            options={[{ label: '显示', value: true }, { label: '隐藏', value: false }]} />
                     </Form.Item>
 
                     <Form.Item

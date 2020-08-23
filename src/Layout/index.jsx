@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { Layout as AntdLayout, Breadcrumb, message } from 'antd';
 import { SnippetsOutlined, FileOutlined } from '@ant-design/icons';
 import { useHistory } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import userApi from '../api/user'
 import { getData } from '../utils/apiMethods'
+import { ACTIONS } from '../constant'
 
 import Header from './components/Header'
 import Footer from './components/Footer'
@@ -13,13 +14,17 @@ import Sider from './components/Sider'
 import './index.scss'
 
 import { adminRoutes } from '../routes'
+import { useCallback } from 'react';
 
 const { Content } = AntdLayout;
 
 function Layout(props) {
 
     const history = useHistory()
+    const dispatch = useDispatch()
+    const user = useSelector(state => state.userReducer)
 
+    const [userId] = useState(localStorage.getItem('userId'))
     const [pathname, setPathname] = useState(history.location.pathname)
     const [breadcrumbList, setBreadcrumbList] = useState([])
 
@@ -52,21 +57,22 @@ function Layout(props) {
         setBreadcrumbList(list)
     }
 
-    const getUserInfo = () => {
-        const userId = localStorage.getItem('userId')
+    /**
+     * 获取用户信息
+     */
+    const getUserInfo = userId => {
         if (!userId) {
             message.error('您尚未登录，请先登录再继续操作')
             return history.push('/login')
         } else {
             getData(userApi.getUserInfo, userId).then(result => {
-                console.log(result);
+                const { code, data } = result.data
+                if (code !== 200) return message.error('')
+                dispatch({ type: ACTIONS.SET_USER_DATA, user: data })
+                console.log(user);
             })
         }
     }
-
-    useEffect(() => {
-        getUserInfo()
-    },[getUserInfo])
 
     useEffect(() => {
         setPathname(history.location.pathname)

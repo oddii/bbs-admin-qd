@@ -2,11 +2,9 @@ import {
     ACTIONS
 } from '../../constant'
 
-const initState = {
-    user: {}
-}
+const initState = {}
 
-const userReduser = (state = initState, action) => {
+const userReducer = (state = initState, action) => {
     switch (action.type) {
         case ACTIONS.SET_USER_DATA:
             return Object.assign(state, action.user)
@@ -15,4 +13,4 @@ const userReduser = (state = initState, action) => {
     }
 }
 
-export default userReduser
+export default userReducer

@@ -44,11 +44,6 @@ const AttachmentList = loadable({
     loading: Loading
 })
 
-const TopicOperationList = loadable({
-    loader: () => import('../pages/TopicManagement/OperationList.jsx'),
-    loading: Loading
-})
-
 const BoardList = loadable({
     loader: () => import('../pages/BoardManagement/BoardList.jsx'),
     loading: Loading
@@ -56,11 +51,6 @@ const BoardList = loadable({
 
 const CategoryList = loadable({
     loader: () => import('../pages/BoardManagement/CategoryList.jsx'),
-    loading: Loading
-})
-
-const AdminList = loadable({
-    loader: () => import('../pages/BoardManagement/AdminList.jsx'),
     loading: Loading
 })
 
@@ -132,13 +122,6 @@ export const adminRoutes = [{
         title: '附件列表',
         icon: FileZipOutlined
     }, {
-        path: '/admin/topic/operation',
-        component: TopicOperationList,
-        exact: true,
-        isNav: true,
-        title: '操作日志',
-        icon: DatabaseOutlined
-    }, {
         path: '/admin/topic/id/:id',
         component: TopicInfo,
         exact: true,
@@ -165,13 +148,6 @@ export const adminRoutes = [{
         exact: true,
         isNav: true,
         title: '分区列表',
-        icon: ProfileOutlined
-    }, {
-        path: '/admin/board/admin',
-        component: AdminList,
-        exact: true,
-        isNav: true,
-        title: '版主列表',
         icon: ProfileOutlined
     }]
 }, {
