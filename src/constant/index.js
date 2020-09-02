@@ -13,8 +13,14 @@ export const HTTPMETHODS = {
     POST: 'post'
 }
 
+export const REGEXP = {
+    username: /[A-Za-z0-9_]{1,30}/,
+    password: /[\u0020-\u007e]{6,20}/
+}
+
 export const CONFIG = {
-    baseUrl: 'http://rap2.taobao.org:38080/app/mock/263117',
+    // baseUrl: 'http://rap2.taobao.org:38080/app/mock/263117',
+    baseUrl: 'http://forum.frp.wegfan.cn/',
     ctxJsonHeader: {
         'Content-Type': 'application/json;charset=UTF-8'
     },

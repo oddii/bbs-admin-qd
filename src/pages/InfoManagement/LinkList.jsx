@@ -4,7 +4,7 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 
 import './index.scss'
 import { DRAWER_TYPE } from '../../constant'
-import { getData } from '../../utils/apiMethods'
+import { getData, postData } from '../../utils/apiMethods'
 import linkApi from '../../api/link'
 import { useEffect } from 'react'
 
@@ -42,10 +42,13 @@ function InfoLinkList() {
    * 点击新增友链按钮事件
    */
   const handleItemInsert = () => {
+    if (linkList.length === 10) return message.warning('最多只能拥有10条友情连接！')
     setFormInitValues(DRAWER_TYPE.INSERT, {
       name: '',
+      description: '',
+      order: 1,
       url: '',
-      logo_url: ''
+      iconUrl: ''
     })
   }
 
@@ -62,7 +65,12 @@ function InfoLinkList() {
    * @param {点击项友链信息} item 
    */
   const handleItemDelete = item => {
-    message.success(`成功删除名称为 “${item.name}” 的友链！`)
+    postData(linkApi.delLink, { id: item.id }).then(result => {
+      const { code, msg } = result.data
+      if (code !== 200) return message.error(msg)
+      message.success(`成功删除名称为 “${item.name}” 的友链！`)
+      getLinkList()
+    })
   }
 
   /**
@@ -76,11 +84,25 @@ function InfoLinkList() {
    * 右侧抽屉提交事件
    */
   const handleDrawerConfirm = () => {
-    linkUpdateForm.validateFields(['name', 'url', 'logo_url'])
+    linkUpdateForm.validateFields(['name', 'description', 'url', 'iconUrl', 'order'])
       .then(result => {
-        console.log(drawerType);
-        console.log(result);
-        console.log(linkInfo);
+        if (drawerType === DRAWER_TYPE.INSERT) {
+          postData(linkApi.addLink, result).then(result => {
+            const { code, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            message.success('新增成功！')
+            getLinkList()
+            handleDrawerCancel()
+          })
+        } else if (drawerType === DRAWER_TYPE.UPDATE) {
+          postData(linkApi.updateLink, { ...result, id: linkInfo.id }).then(result => {
+            const { code, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            message.success('修改成功！')
+            getLinkList()
+            handleDrawerCancel()
+          })
+        }
       })
       .catch(error => {
         const { errorFields } = error
@@ -134,7 +156,7 @@ function InfoLinkList() {
                   <div className="list-item-meta">
                     <div className="item-name">{item.name}</div>
                     <div className="item-description">{item.description}</div>
-                    <div className="item-url">{item.url}</div>
+                    <div className="item-url"><a href={item.url} target="_blank">{item.url}</a></div>
                     <div className="item-time">创建时间：{item.createTime}</div>
                     <div className="item-time">更新时间：{item.updateTime}</div>
                   </div>

@@ -7,35 +7,48 @@ import {
 
 import { DRAWER_TYPE } from '../../constant'
 import boardApi from '../../api/board'
-import { getData } from '../../utils/apiMethods'
+import categoryApi from '../../api/category'
+import { getData, postData } from '../../utils/apiMethods'
+import { useSelector } from 'react-redux'
 
 const { Column } = Table;
+const { Option } = Select
 
 function BoardList() {
 
+    const localUserInfo = useSelector(state => state.userReducer)
+
     const [modalVisible, setModalVisible] = useState(false)
     const [drawerVisible, setDrawerVisible] = useState(false)
+
+    const [categoryNameList, setCategoryNameList] = useState([])
     const [boardList, setBoardList] = useState([])
-    const [currentPage, setCurrentPage] = useState(0)
-    const [pageSize, setPageSize] = useState(0)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
     const [total, setTotal] = useState(0)
+
     const [boardInfo, setBoardInfo] = useState({})
     const [drawerType, setDrawerType] = useState('')
     const [boardForm] = Form.useForm()
 
-    const getBoardList = (
-        page = 1,
-        count = 10
-    ) => {
-        getData(boardApi.getBoardList, {
-            page, count
-        }).then(result => {
-            const { code, data } = result.data
-            if (code !== 200) return message.error('')
-            setBoardList(data.list)
-            setCurrentPage(data.page)
-            setPageSize(data.count)
-            setTotal(data.total)
+    const getBoardList = (params = {}) => {
+        getData(boardApi.getBoardList, params).then(result => {
+            const { code, data, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            setBoardList(data.content)
+            setCurrentPage(data.currentPage)
+            setPageSize(data.pageSize)
+            setTotal(data.totalRecords)
+        })
+    }
+
+    const getCategoryNameList = () => {
+        getData(categoryApi.getCategoryNameList).then(result => {
+            const { code, data, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            setCategoryNameList(data)
+        }).catch(error => {
+            console.log(error);
         })
     }
 
@@ -45,6 +58,7 @@ function BoardList() {
     }
 
     const setFormInitValues = (drawerType, initValues) => {
+        getCategoryNameList()
         setDrawerType(drawerType)
         setBoardInfo(initValues)
         boardForm.setFieldsValue(initValues)
@@ -70,8 +84,15 @@ function BoardList() {
     }
 
     const handleItemDelete = item => {
-        console.log(item);
-        message.success(`成功删除名称为 “${item.name}” 的板块！`)
+        postData(boardApi.delBoard, { id: item.id }).then(result => {
+            const { code, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            message.success(`成功删除名称为 “${item.name}” 的板块！`)
+            getBoardList({
+                page: currentPage,
+                count: pageSize
+            })
+        })
     }
 
     const handleDrawerCancel = () => {
@@ -79,10 +100,52 @@ function BoardList() {
     }
 
     const handleDrawerConfirm = () => {
-        boardForm.validateFields(['name', 'description', 'visible', 'order'])
+        boardForm.validateFields(['name', 'description', 'visible', 'order', 'categoryId', 'banVisit',
+            'banCreateTopic', 'banReply', 'banUploadAttachment', 'banDownloadAttachment'])
             .then(result => {
-                console.log(result);
-                console.log(boardInfo)
+                const { name, description, visible, order, categoryId, banVisit, banCreateTopic,
+                    banReply, banUploadAttachment, banDownloadAttachment } = result
+
+                const boardPermission = {
+                    banVisit,
+                    banCreateTopic,
+                    banReply,
+                    banUploadAttachment,
+                    banDownloadAttachment
+                }
+
+                const data = {
+                    name,
+                    description,
+                    visible,
+                    order,
+                    categoryId,
+                    boardPermission
+                }
+
+                if (drawerType === DRAWER_TYPE.INSERT) {
+                    postData(boardApi.addBoard, data).then(result => {
+                        const { code, msg } = result.data
+                        if (code !== 200) return message.error(msg)
+                        message.success('新建成功！')
+                        getBoardList({
+                            page: currentPage,
+                            count: pageSize
+                        })
+                        handleDrawerCancel()
+                    })
+                } else if (drawerType === DRAWER_TYPE.UPDATE) {
+                    postData(boardApi.updateBoard, { id: boardInfo.id, ...data }).then(result => {
+                        const { code, msg } = result.data
+                        if (code !== 200) return message.error(msg)
+                        message.success('编辑成功！')
+                        getBoardList({
+                            page: currentPage,
+                            count: pageSize
+                        })
+                        handleDrawerCancel()
+                    })
+                }
             })
             .catch(error => {
                 const { errorFields } = error
@@ -92,14 +155,20 @@ function BoardList() {
     }
 
     useEffect(() => {
-        getBoardList()
-    }, [])
+        getBoardList({
+            page: currentPage,
+            count: pageSize
+        })
+    }, [currentPage, pageSize])
 
     return (
         <>
             <Card
                 title="板块列表"
-                extra={<Button onClick={handleItemInsert}>新建板块</Button>}>
+                extra={
+                    localUserInfo.admin
+                        ? <Button onClick={handleItemInsert}>新建板块</Button>
+                        : null}>
 
                 <Table
                     rowKey="id"
@@ -111,7 +180,7 @@ function BoardList() {
                         showSizeChanger: true,
                         showQuickJumper: true,
                         showTotal: (total) => `Total ${total} items`,
-                        onChange: (currentPage, pageSize) => getBoardList(currentPage, pageSize)
+                        onChange: (currentPage, pageSize) => getBoardList({ page: currentPage, count: pageSize })
                     }}>
                     <Column
                         title="#"
@@ -135,40 +204,44 @@ function BoardList() {
                     <Column title="顺序" dataIndex="order" key="order" align="center" width={65} />
                     <Column title="创建时间" dataIndex="createTime" key="createTime" align="center" width={180} />
                     <Column title="更新时间" dataIndex="updateTime" key="updateTime" align="center" width={180} />
-                    <Column
-                        title="操作"
-                        key="action"
-                        align="center"
-                        width={120}
-                        render={(text, record) => (
-                            <>
-                                <Dropdown
-                                    overlay={
-                                        <Menu>
-                                            <Menu.Item>
-                                                <div onClick={() => handleModalShow(record)}>版主</div>
-                                            </Menu.Item>
+                    {
+                        localUserInfo.admin
+                            ? <Column
+                                title="操作"
+                                key="action"
+                                align="center"
+                                width={120}
+                                render={(text, record) => (
+                                    <>
+                                        <Dropdown
+                                            overlay={
+                                                <Menu>
+                                                    <Menu.Item>
+                                                        <div onClick={() => handleModalShow(record)}>版主</div>
+                                                    </Menu.Item>
 
-                                            <Menu.Item>
-                                                <div onClick={() => handleItemUpdate(record)}>编辑</div>
-                                            </Menu.Item>
-                                        </Menu>}>
-                                    <span className="btn-option">更多</span>
-                                </Dropdown>
+                                                    <Menu.Item>
+                                                        <div onClick={() => handleItemUpdate(record)}>编辑</div>
+                                                    </Menu.Item>
+                                                </Menu>}>
+                                            <span className="btn-option">更多</span>
+                                        </Dropdown>
 
-                                <Divider type="vertical" />
+                                        <Divider type="vertical" />
 
-                                <Popconfirm
-                                    title="删除后不可恢复，您确认删除本项吗？"
-                                    onConfirm={() => handleItemDelete(record)}
-                                    okText="是的！"
-                                    cancelText="我再想想..."
-                                >
-                                    <span className="btn-option-danger">删除</span>
-                                </Popconfirm>
-                            </>
-                        )}
-                    />
+                                        <Popconfirm
+                                            title="删除后不可恢复，您确认删除本项吗？"
+                                            onConfirm={() => handleItemDelete(record)}
+                                            okText="是的！"
+                                            cancelText="我再想想..."
+                                        >
+                                            <span className="btn-option-danger">删除</span>
+                                        </Popconfirm>
+                                    </>
+                                )}
+                            />
+                            : null
+                    }
                 </Table>
             </Card>
 
@@ -184,8 +257,8 @@ function BoardList() {
 
                     renderItem={item => (<List.Item actions={[<Button type="link" danger>删除</Button>]}>
                         <List.Item.Meta
-                            avatar={<Avatar style={{ color: '#1890ff', backgroundColor: '#e6f7ff' }}>{item.nickname[0]}</Avatar>}
-                            title={item.nickname}
+                            avatar={<Avatar style={{ color: '#1890ff', backgroundColor: '#e6f7ff' }}>{item.name[0]}</Avatar>}
+                            title={item.name}
                             description={'板块版主'}
                         /></List.Item>)}
                 />
@@ -226,6 +299,22 @@ function BoardList() {
                     >
                         <Input.TextArea placeholder="请输入板块描述" autoSize={{ minRows: 2, maxRows: 6 }} />
                     </Form.Item>
+
+                    {
+                        drawerType === DRAWER_TYPE.INSERT
+                            ? <Form.Item
+                                name="categoryId"
+                                label="所属分区"
+                                rules={[{ required: true, message: '请选择所属分区!' }]}>
+                                <Select>
+                                    {
+                                        categoryNameList.map(item =>
+                                            <Option value={item.id} key={item.id}>{item.name}</Option>)
+                                    }
+                                </Select>
+                            </Form.Item>
+                            : null
+                    }
 
                     <Form.Item
                         name="visible"

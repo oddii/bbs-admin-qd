@@ -5,6 +5,7 @@ import {
     ConfigProvider, Modal, Descriptions
 } from 'antd'
 import zhCN from 'antd/es/locale/zh_CN';  // 引入中文包
+import { useHistory } from 'react-router-dom'
 import moment from 'moment'
 // 引入编辑器组件
 import BraftEditor from 'braft-editor'
@@ -47,6 +48,8 @@ const renderAutoCompleteItem = item => ({
 })
 
 function ReplyList() {
+
+    const history = useHistory()
 
     const [editorState, setEditorState] = useState(BraftEditor.createEditorState(null))
     const [editorReadOnly, setEditorReadOnly] = useState(true)
@@ -171,21 +174,23 @@ function ReplyList() {
         const params = {}
         for (let key in values) {
             if (values.hasOwnProperty(key)) {
-                if (key === 'from' || key === 'to') {
-                    if (values[key]) {
-                        params[key] = moment(values[key]).format('YYYY-MM-DD hh:mm:ss')
+                if (values[key]) {
+                    if (key === 'from' || key === 'to') {
+                        if (values[key]) {
+                            params[key] = moment(values[key]).format('YYYY-MM-DD HH:mm:ss')
+                        }
+                    } else if (key === 'boardId') {
+                        if (values[key]) {
+                            params[key] = values[key][values[key].length - 1]
+                        }
+                    } else {
+                        params[key] = values[key]
                     }
-                } else if (key === 'boardId') {
-                    if (values[key]) {
-                        params[key] = values[key][values[key].length - 1]
-                    }
-                } else {
-                    params[key] = values[key]
                 }
                 commonSetter(key)(values[key])
             }
         }
-        params.page = currentPage
+        params.page = 1
         params.count = pageSize
         getReplyList(params)
     }
@@ -213,16 +218,29 @@ function ReplyList() {
         setModalVisible(true)
     }
 
+    const handleToTopicItemInfo = item => {
+        history.push(`/admin/topic/id/${item.topicId}`)
+    }
+
+    const handleToUserItemInfo = id => {
+        history.push(`/admin/user/center/${id}`)
+    }
+
+    const handleInfoModalCancel = () => {
+        setModalVisible(false)
+        setEditorReadOnly(true)
+    }
+
     /**
      * 更新回复详情信息
      */
     const handleInfoModalSubmit = () => {
         postData(replyApi.updateReply, {
-            id: replyInfo.id,
+            replyId: replyInfo.id,
             content: editorState.toHTML()
         }).then(result => {
-            const { code } = result.data
-            if (code !== 200) return message.error('')
+            const { code, msg } = result.data
+            if (code !== 200) return message.error(msg)
             message.success('更新成功')
             getReplyList({
                 page: currentPage,
@@ -293,7 +311,7 @@ function ReplyList() {
 
                             <Col span={6} >
                                 <Form.Item name='keyword' label='关键名词' >
-                                    <Input placeholder="请输入关键名词" />
+                                    <Input placeholder="请输入关键名词" allowClear />
                                 </Form.Item>
                             </Col>
 
@@ -370,22 +388,37 @@ function ReplyList() {
                             align="center"
                             width={65}
                             render={(text, record, index) => index + 1} />
-                        <Column title="主题帖名称" dataIndex="topicTitle" key="topicTitle" align="center" width={180} ellipsis />
-                        <Column title="回复内容" dataIndex="shortContent" key="shortContent" align="center" ellipsis />
-                        <Column title="回复用户" dataIndex="replierNickname" key="replierNickname" align="center" width={180} ellipsis />
+                        <Column
+                            title="主题帖名称"
+                            dataIndex="topicTitle"
+                            key="topicTitle"
+                            align="center"
+                            width={180}
+                            ellipsis
+                            render={(text, record) =>
+                                <Button type="link" onClick={() => handleToTopicItemInfo(record)}>{record.topicTitle}</Button>
+                            } />
+                        <Column title="回复内容" dataIndex="content" key="content" align="center" ellipsis />
+                        <Column title="回复用户" dataIndex="replierUsername" key="replierUsername" align="center" width={180}
+                            ellipsis
+                            render={(text, record) =>
+                                <Button type="link" onClick={() => handleToUserItemInfo(record.replierUserId)}>{text}</Button>
+                            } />
                         <Column title="回复时间" dataIndex="replyTime" key="replyTime" align="center" width={180} />
-                        <Column title="最后编辑用户" dataIndex="editorNickname" key="editorNickname" align="center" width={180} ellipsis />
+                        <Column title="最后编辑用户" dataIndex="editorUsername" key="editorUsername" align="center" width={180}
+                            ellipsis
+                            render={(text, record) =>
+                                <Button type="link" onClick={() => handleToUserItemInfo(record.editorUserId)}>{text}</Button>
+                            } />
                         <Column title="最后编辑时间" dataIndex="editTime" key="editTime" align="center" width={180} />
                         <Column
                             title="操作"
                             key="action"
                             align="center"
-                            width={120}
+                            width={65}
                             render={(text, record) => (
                                 <>
                                     <span className="btn-option" onClick={() => handleToItemInfo(record)}>详情</span>
-                                    <Divider type="vertical" />
-                                    <span className="btn-option">编辑</span>
                                 </>
                             )}
                         />
@@ -398,7 +431,7 @@ function ReplyList() {
                     width={1200}
                     visible={modalVisible}
                     maskClosable={false}
-                    onCancel={() => setModalVisible(false)}
+                    onCancel={() => handleInfoModalCancel()}
                     footer={
                         editorReadOnly ?
                             <Button onClick={() => setEditorReadOnly(false)}>编辑</Button>

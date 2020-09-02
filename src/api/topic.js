@@ -1,4 +1,5 @@
 export default {
+    getTopicInfo: '/api/topic/topic-detail', //  根据 id 获得指定帖子信息
     getBoardTopicList: '/api/topic/board-topic-list', //  获取指定板块的主题帖列表
     getUserTopicList: '/api/topic/user-topic-list', //  获取指定用户的主题帖列表
     getTopicList: '/api/topic/topic-list', //  获取所有主题帖列表

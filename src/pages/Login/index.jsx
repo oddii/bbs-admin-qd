@@ -4,20 +4,24 @@ import { Form, Input, Button, Card, message, Spin } from 'antd';
 import { UserOutlined, LockOutlined, CodeOutlined, LoadingOutlined } from '@ant-design/icons';
 
 import { useHistory } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+
 
 import { getData, postData } from '../../utils/apiMethods'
 import userApi from '../../api/user'
-import { ACTIONS } from '../../constant'
+import { ACTIONS, REGEXP } from '../../constant'
 import './index.scss'
+
+const loadingKey = 'loading'
 
 function Login() {
 
     const history = useHistory()
     const dispatch = useDispatch()
+    const user = useSelector(state => state.userReducer)
 
     const [verifyCodeImg, setVerifyCodeImg] = useState('')
-    const [verifyCodeRandom, setVerifyCodeRandom] = useState('')
+    const [verifyCodeRandom, setVerifyCodeRandom] = useState('123')
 
     /**
      * 获取验证码图片
@@ -25,7 +29,7 @@ function Login() {
     const getVerifyCodeImg = () => {
         getData(userApi.refreshCode).then(result => {
             const { code, data } = result.data
-            console.log(result.data);
+
             if (code !== 200) return message.error('')
             setVerifyCodeImg(data.url)
             setVerifyCodeRandom(data.verifyCodeRandom)
@@ -37,6 +41,7 @@ function Login() {
      * @param {表单信息}} values 
      */
     const login = values => {
+        message.loading({ content: '正在登录...', key: loadingKey })
         const { username, password, verifyCode } = values
         postData(userApi.login, {
             username,
@@ -44,13 +49,45 @@ function Login() {
             verifyCode,
             verifyCodeRandom
         }).then(result => {
-            const { code, data } = result.data
+            const { code, data, msg, errorData } = result.data
+
+            if (code !== 200) {
+                if (errorData) return message.error(errorData.username
+                    || errorData.password || errorData.verifyCode)
+                return message.error(msg)
+            }
+
             console.log(data);
-            if (code !== 200) return message.error('')
-            const { id } = data
-            localStorage.setItem('userId', id)
+
+            const { id, permission } = data
+            const { admin, boardAdmin, categoryAdmin, superBoardAdmin } = permission
+            const canLogin = admin || boardAdmin || categoryAdmin || superBoardAdmin
+
+            if (canLogin) {
+                localStorage.setItem('userId', id)
+                getUserInfo(id)
+            } else {
+                message.error('对不起，您未获得登录后台的权限！')
+            }
+        }).catch(error => {
+            message.error('连接超时，请稍后再试！')
+        })
+    }
+
+    /**
+     * 根据用户Id获取用户信息
+     * @param {用户Id} userId 
+     */
+    const getUserInfo = id => {
+        getData(userApi.getUserInfo, { userId: id }).then(async result => {
+            const { code, data, msg } = await result.data
+            if (code !== 200) return message.error(msg)
             dispatch({ type: ACTIONS.SET_USER_DATA, user: data })
+
+            message.destroy(loadingKey)
             history.push('/admin')
+        }).catch(() => {
+            message.error('连接超时，请稍后再试！')
         })
     }
 
@@ -92,7 +129,9 @@ function Login() {
                 >
                     <Form.Item
                         name="username"
-                        rules={[{ required: true, message: '请输入你的用户名！' }]}
+                        rules={[{ required: true, message: '请输入你的用户名！' },
+                        { min: 1, max: 30, message: '用户名长度需要在1和30之间！' },
+                        { pattern: REGEXP.username, message: '用户名只能包含大小写字母、数字、下划线！' }]}
                     >
                         <Input
                             prefix={<UserOutlined />}
@@ -100,7 +139,8 @@ function Login() {
                     </Form.Item>
                     <Form.Item
                         name="password"
-                        rules={[{ required: true, message: '请输入你的用户密码！' }]}
+                        rules={[{ required: true, message: '请输入你的用户密码！' },
+                        { min: 6, max: 20, message: '用户密码长度需要在6和20之间！' },]}
                     >
                         <Input
                             prefix={<LockOutlined />}
@@ -111,7 +151,8 @@ function Login() {
 
                     <Form.Item
                         name="verifyCode"
-                        rules={[{ required: true, message: '请输入你的验证码！' }]}
+                        rules={[{ required: true, message: '请输入你的验证码！' },
+                        { len: 4, message: '验证码长度只能为4位！' }]}
                     >
                         <Input
                             prefix={<CodeOutlined />}

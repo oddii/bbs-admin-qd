@@ -7,13 +7,16 @@ import {
 import { } from '@ant-design/icons';
 import zhCN from 'antd/es/locale/zh_CN';  // 引入中文包
 import moment from 'moment'
+import filesize from 'filesize'
+import { useHistory } from 'react-router-dom'
 
-import { debounce } from '../../utils/utils'
+import { debounce, downloadFile } from '../../utils/utils'
 import userApi from '../../api/user'
 import attachmentApi from '../../api/attachment'
 import boardApi from '../../api/board'
 import { getData, postData } from '../../utils/apiMethods'
 import '../../index.scss'
+import { CONFIG } from '../../constant';
 
 const { Column } = Table
 
@@ -23,6 +26,18 @@ const boardNameListfieldNames = {
     value: 'id',
     children: 'boardList'
 }
+
+const renderAutoCompleteTitle = () => (
+    <div
+        style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            paddingLeft: 12
+        }}>
+        <span>用户名</span>
+        <span>昵称</span>
+    </div>
+)
 
 /**
  * 渲染自动完成选项的 item
@@ -44,6 +59,8 @@ const renderAutoCompleteItem = item => ({
 })
 
 function AttachmentList() {
+
+    const history = useHistory()
 
     const [searchform] = Form.useForm();
     const [selectedRowKeys, setSelectedRowKeys] = useState([])
@@ -166,21 +183,23 @@ function AttachmentList() {
         const params = {}
         for (let key in values) {
             if (values.hasOwnProperty(key)) {
-                if (key === 'from' || key === 'to') {
-                    if (values[key]) {
-                        params[key] = moment(values[key]).format('YYYY-MM-DD hh:mm:ss')
+                if (values[key]) {
+                    if (key === 'from' || key === 'to') {
+                        if (values[key]) {
+                            params[key] = moment(values[key]).format('YYYY-MM-DD HH:mm:ss')
+                        }
+                    } else if (key === 'boardId') {
+                        if (values[key]) {
+                            params[key] = values[key][values[key].length - 1]
+                        }
+                    } else {
+                        params[key] = values[key]
                     }
-                } else if (key === 'boardId') {
-                    if (values[key]) {
-                        params[key] = values[key][values[key].length - 1]
-                    }
-                } else {
-                    params[key] = values[key]
                 }
                 commonSetter(key)(values[key])
             }
         }
-        params.page = currentPage
+        params.page = 1
         params.count = pageSize
         getAttachmentList(params)
     }
@@ -198,6 +217,14 @@ function AttachmentList() {
         searchform.resetFields()
     }
 
+    const handleToTopicItemInfo = item => {
+        history.push(`/admin/topic/id/${item.topicId}`)
+    }
+
+    const handleToUserItemInfo = id => {
+        history.push(`/admin/user/center/${id}`)
+    }
+
     /**
      * 列表选中项删除事件
      */
@@ -212,6 +239,13 @@ function AttachmentList() {
                 count: pageSize
             })
         })
+    }
+
+    const handleItemDownload = item => {
+        let { filename, downloadUrl } = item
+        downloadUrl = CONFIG.baseUrl + downloadUrl.substring(1, downloadUrl.length)
+        downloadFile(filename, downloadUrl)
+        getData()
     }
 
     /**
@@ -257,7 +291,7 @@ function AttachmentList() {
                                     <AutoComplete
                                         allowClear
                                         dropdownMatchSelectWidth={250}
-                                        options={autoCompleteList}
+                                        options={[{ label: renderAutoCompleteTitle(), options: autoCompleteList }]}
                                         onSearch={debounce(handleAutoComplete, 500)}
                                         placeholder="请输入用户名/用户昵称"
                                     />
@@ -266,7 +300,7 @@ function AttachmentList() {
 
                             <Col span={6} >
                                 <Form.Item name='filename' label='文件名称' >
-                                    <Input placeholder="请输入文件名称" />
+                                    <Input placeholder="请输入文件名称" allowClear />
                                 </Form.Item>
                             </Col>
 
@@ -344,11 +378,25 @@ function AttachmentList() {
                             width={65}
                             render={(text, record, index) => index + 1} />
                         <Column title="文件名称" dataIndex="filename" key="filename" align="center" width={220} ellipsis />
-                        <Column title="所属主题帖" dataIndex="topicTitle" key="topicTitle" align="center" width={220} ellipsis />
+                        <Column
+                            title="所属主题帖"
+                            dataIndex="topicTitle"
+                            key="topicTitle"
+                            align="center"
+                            width={220}
+                            ellipsis
+                            render={(text, record) =>
+                                <Button type="link" onClick={() => handleToTopicItemInfo(record)}>{record.topicTitle}</Button>
+                            } />
                         <Column title="板块名称" dataIndex="boardName" key="boardName" align="center" width={220} ellipsis />
-                        <Column title="文件大小" dataIndex="fileSize" key="fileSize" align="center" width={90} />
+                        <Column title="文件大小" dataIndex="fileSize" key="fileSize" align="center" width={90}
+                            render={(text) => filesize(text)} />
                         <Column title="下载次数" dataIndex="downloadCount" key="downloadCount" align="center" width={90} />
-                        <Column title="上传用户" dataIndex="uploaderUsername" key="uploaderUsername" align="center" width={180} ellipsis />
+                        <Column title="上传用户" dataIndex="uploaderUsername" key="uploaderUsername" align="center" width={180}
+                            ellipsis
+                            render={(text, record) =>
+                                <Button type="link" onClick={() => handleToUserItemInfo(record.uploaderUserId)}>{text}</Button>
+                            } />
                         <Column title="上传时间" dataIndex="uploadTime" key="uploadTime" align="center" width={180} />
                         <Column
                             title="操作"
@@ -361,7 +409,7 @@ function AttachmentList() {
 
                                     <Divider type="vertical" />
 
-                                    <span className="btn-option">下载</span>
+                                    <span className="btn-option" onClick={() => handleItemDownload(record)}>下载</span>
                                 </>
                             )}
                         />

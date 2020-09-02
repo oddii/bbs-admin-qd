@@ -8,9 +8,7 @@ const { Footer: AntdFooter } = AntdLayout
 function Header() {
     return (
         <AntdFooter className="footer-wrapper">
-            <div>
-                Ant Design ©2018 Created by Ant UED
-            </div>
+            <div>9组 橡皮人雷欧弟 组长：范育铭 @2020 Created By odd</div>
         </AntdFooter>
     )
 }

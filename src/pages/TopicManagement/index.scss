@@ -1,6 +1,12 @@
-.topic-info-wrapper {
+.topic-info-wrapper {}
+
+.topic-info-wrapper,
+.topic-edit-wrapper {
     .list-item-wrapper {
         word-break: break-word;
+        .btn-delete{
+            color: #ff4d4f;
+        }
 
         .item-filename {
             font-size: 15px;
@@ -51,6 +57,14 @@
     }
 }
 
-.reply-info-wrapper {
+.reply-info-wrapper {}
 
+.topic-insert-wrapper {
+    .input-item {
+        .ant-input-group-addon {
+            min-width: 100px !important;
+            padding: 0 !important;
+            cursor: pointer;
+        }
+    }
 }

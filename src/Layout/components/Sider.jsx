@@ -1,5 +1,5 @@
 import React from 'react'
-import { Layout, Menu } from 'antd'
+import { Layout, Menu, message } from 'antd'
 import { useHistory } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
@@ -19,10 +19,22 @@ function Sider() {
     const history = useHistory()
     const { pathname } = history.location
 
+    const localUserInfo = useSelector(state => state.userReducer)
     const isCollapsed = useSelector(state => state.commonReducer.isCollapsed)
 
     const handleMenuClick = ({ key }) => {
-        history.push({ pathname: key })
+        switch (key) {
+            case '/admin/topic/attachment':
+            case '/admin/user/list':
+            case '/admin/info/link':
+            case '/admin/info/operation':
+                if (!localUserInfo.admin) {
+                    return message.error('您为获得访问该页面的权限！')
+                }
+                return history.push({ pathname: key })
+            default:
+                return history.push({ pathname: key })
+        }
     }
 
     return (

@@ -7,36 +7,34 @@ import {
 
 import { DRAWER_TYPE } from '../../constant'
 import categoryApi from '../../api/category'
-import { getData } from '../../utils/apiMethods'
+import userApi from '../../api/user'
+import { getData, postData } from '../../utils/apiMethods'
+import { useSelector } from 'react-redux'
 
 const { Column } = Table;
 
 function CategoryList() {
 
+    const localUserInfo = useSelector(state => state.userReducer)
+
     const [modalVisible, setModalVisible] = useState(false)
     const [drawerVisible, setDrawerVisible] = useState(false)
     const [categoryList, setCategoryList] = useState([])
-    const [currentPage, setCurrentPage] = useState(0)
-    const [pageSize, setPageSize] = useState(0)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
     const [total, setTotal] = useState(0)
     const [categoryInfo, setCategoryInfo] = useState({})
     const [drawerType, setDrawerType] = useState('')
     const [categoryForm] = Form.useForm()
 
-    const getCategoryList = (
-        page = 1,
-        count = 10
-    ) => {
-        getData(categoryApi.getCategoryList, {
-            page,
-            count
-        }).then(result => {
-            const { code, data } = result.data
-            if (code !== 200) return message.error('')
-            setCategoryList(data.list)
-            setCurrentPage(data.page)
-            setPageSize(data.count)
-            setTotal(data.total)
+    const getCategoryList = (params = {}) => {
+        getData(categoryApi.getCategoryList, params).then(result => {
+            const { code, data, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            setCategoryList(data.content)
+            setCurrentPage(data.currentPage)
+            setPageSize(data.pageSize)
+            setTotal(data.totalRecords)
         })
     }
 
@@ -56,7 +54,8 @@ function CategoryList() {
         setFormInitValues(DRAWER_TYPE.INSERT, {
             name: '',
             description: '',
-            order: 1
+            order: 1,
+            visible: true
         })
     }
 
@@ -65,8 +64,32 @@ function CategoryList() {
     }
 
     const handleItemDelete = item => {
-        console.log(item);
-        message.success(`成功删除名称为 “${item.name}” 的分区！`)
+        postData(categoryApi.delCategory, { id: item.id }).then(result => {
+            const { code, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            message.success(`成功删除名称为 “${item.name}” 的分区！`)
+            getCategoryList({
+                page: currentPage,
+                count: pageSize
+            })
+        })
+    }
+
+    const handleAdminItemDelete = adminItem => {
+        const categoryIdList = categoryInfo.categoryAdmin
+            .filter(item => item.id !== adminItem.id)
+            .map(item => item.id);
+
+        postData(userApi.updateCategoryAdmin, { categoryIdList }).then(result => {
+            const { code, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            message.success(`成功删除名称为 “${adminItem.name}” 的分区版主！`)
+            setModalVisible(false)
+            getCategoryList({
+                page: currentPage,
+                count: pageSize
+            })
+        })
     }
 
     const handleDrawerCancel = () => {
@@ -76,8 +99,29 @@ function CategoryList() {
     const handleDrawerConfirm = () => {
         categoryForm.validateFields(['name', 'description', 'visible', 'order'])
             .then(result => {
-                console.log(result);
-                console.log(categoryInfo)
+                if (drawerType === DRAWER_TYPE.INSERT) {
+                    postData(categoryApi.addCategory, result).then(result => {
+                        const { code, msg } = result.data
+                        if (code !== 200) return message.error(msg)
+                        message.success('新建成功！')
+                        getCategoryList({
+                            page: currentPage,
+                            count: pageSize
+                        })
+                        handleDrawerCancel()
+                    })
+                } else if (drawerType === DRAWER_TYPE.UPDATE) {
+                    postData(categoryApi.updateCategory, { id: categoryInfo.id, ...result }).then(result => {
+                        const { code, msg } = result.data
+                        if (code !== 200) return message.error(msg)
+                        message.success('编辑成功！')
+                        getCategoryList({
+                            page: currentPage,
+                            count: pageSize
+                        })
+                        handleDrawerCancel()
+                    })
+                }
             })
             .catch(error => {
                 const { errorFields } = error
@@ -87,14 +131,20 @@ function CategoryList() {
     }
 
     useEffect(() => {
-        getCategoryList()
-    }, [])
+        getCategoryList({
+            page: currentPage,
+            count: pageSize
+        })
+    }, [currentPage, pageSize])
 
     return (
         <>
             <Card
                 title="分区列表"
-                extra={<Button onClick={handleItemInsert}>新建分区</Button>} >
+                extra={
+                    localUserInfo.admin
+                        ? <Button onClick={handleItemInsert}>新建分区</Button>
+                        : null} >
 
                 <Table
                     rowKey="id"
@@ -106,7 +156,7 @@ function CategoryList() {
                         showSizeChanger: true,
                         showQuickJumper: true,
                         showTotal: (total) => `Total ${total} items`,
-                        onChange: (currentPage, pageSize) => getCategoryList(currentPage, pageSize)
+                        onChange: (currentPage, pageSize) => getCategoryList({ page: currentPage, count: pageSize })
                     }}>
                     <Column
                         title="#"
@@ -129,40 +179,44 @@ function CategoryList() {
                     <Column title="顺序" dataIndex="order" key="order" align="center" width={65} />
                     <Column title="创建时间" dataIndex="createTime" key="createTime" align="center" width={180} />
                     <Column title="更新时间" dataIndex="updateTime" key="updateTime" align="center" width={180} />
-                    <Column
-                        title="操作"
-                        key="action"
-                        align="center"
-                        width={120}
-                        render={(text, record) => (
-                            <>
-                                <Dropdown
-                                    overlay={
-                                        <Menu>
-                                            <Menu.Item>
-                                                <div onClick={() => handleModalShow(record)}>分区版主</div>
-                                            </Menu.Item>
+                    {
+                        localUserInfo.admin
+                            ? <Column
+                                title="操作"
+                                key="action"
+                                align="center"
+                                width={120}
+                                render={(text, record) => (
+                                    <>
+                                        <Dropdown
+                                            overlay={
+                                                <Menu>
+                                                    <Menu.Item>
+                                                        <div onClick={() => handleModalShow(record)}>分区版主</div>
+                                                    </Menu.Item>
 
-                                            <Menu.Item style={{ textAlign: 'center' }}>
-                                                <div onClick={() => handleItemUpdate(record)}>编辑</div>
-                                            </Menu.Item>
-                                        </Menu>}>
-                                    <span className="btn-option">更多</span>
-                                </Dropdown>
+                                                    <Menu.Item style={{ textAlign: 'center' }}>
+                                                        <div onClick={() => handleItemUpdate(record)}>编辑</div>
+                                                    </Menu.Item>
+                                                </Menu>}>
+                                            <span className="btn-option">更多</span>
+                                        </Dropdown>
 
-                                <Divider type="vertical" />
+                                        <Divider type="vertical" />
 
-                                <Popconfirm
-                                    title="删除后不可恢复，您确认删除本项吗？"
-                                    onConfirm={() => handleItemDelete(record)}
-                                    okText="是的！"
-                                    cancelText="我再想想..."
-                                >
-                                    <span className="btn-option-danger">删除</span>
-                                </Popconfirm>
-                            </>
-                        )}
-                    />
+                                        <Popconfirm
+                                            title="删除后不可恢复，您确认删除本项吗？"
+                                            onConfirm={() => handleItemDelete(record)}
+                                            okText="是的！"
+                                            cancelText="我再想想..."
+                                        >
+                                            <span className="btn-option-danger">删除</span>
+                                        </Popconfirm>
+                                    </>
+                                )}
+                            />
+                            : null
+                    }
                 </Table>
             </Card >
 
@@ -175,10 +229,21 @@ function CategoryList() {
             >
                 <List
                     dataSource={categoryInfo.categoryAdmin}
-                    renderItem={item => (<List.Item actions={[<Button type="link" danger>删除</Button>]}>
+                    renderItem={item => (<List.Item actions={
+                        [
+                            <Popconfirm
+                                title="删除后不可恢复，您确认删除本项吗？"
+                                onConfirm={() => handleAdminItemDelete(item)}
+                                okText="是的！"
+                                cancelText="我再想想..."
+                            >
+                                <Button type="link" danger>删除</Button>
+                            </Popconfirm>
+                        ]
+                    }>
                         <List.Item.Meta
-                            avatar={<Avatar style={{ color: '#1890ff', backgroundColor: '#e6f7ff' }}>{item.nickname[0]}</Avatar>}
-                            title={item.nickname}
+                            avatar={<Avatar style={{ color: '#1890ff', backgroundColor: '#e6f7ff' }}>{item.name[0]}</Avatar>}
+                            title={item.name}
                             description={'分区版主'}
                         /></List.Item>)}
                 />
@@ -199,7 +264,7 @@ function CategoryList() {
 
                 <Form
                     form={categoryForm}
-                    initialValues={{ order: 1 }}
+                    initialValues={{ order: 1, visible: true }}
                     hideRequiredMark
                 >
                     <Form.Item

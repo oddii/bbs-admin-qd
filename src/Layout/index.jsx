@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Layout as AntdLayout, Breadcrumb, message } from 'antd';
-import { SnippetsOutlined, FileOutlined } from '@ant-design/icons';
+import {
+    SnippetsOutlined, FileOutlined, UserOutlined, TeamOutlined,
+    SettingOutlined
+} from '@ant-design/icons';
 import { useHistory } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -14,7 +17,6 @@ import Sider from './components/Sider'
 import './index.scss'
 
 import { adminRoutes } from '../routes'
-import { useCallback } from 'react';
 
 const { Content } = AntdLayout;
 
@@ -23,8 +25,8 @@ function Layout(props) {
     const history = useHistory()
     const dispatch = useDispatch()
     const user = useSelector(state => state.userReducer)
+    const [refresh, setRefresh] = useState(false)
 
-    const [userId] = useState(localStorage.getItem('userId'))
     const [pathname, setPathname] = useState(history.location.pathname)
     const [breadcrumbList, setBreadcrumbList] = useState([])
 
@@ -34,8 +36,20 @@ function Layout(props) {
     const handleBreadcrumbChange = (pathname) => {
 
         let list = []
-        if (!pathname.includes('/admin/topic/id/')) {
 
+        if (pathname.includes('/admin/topic/id/')) {
+            list.push(
+                { path: '/admin/topic', title: '帖子管理', icon: SnippetsOutlined },
+                { path: pathname, title: '帖子详情', icon: FileOutlined })
+        } else if (pathname.includes('/admin/user/center/')) {
+            list.push(
+                { path: '/admin/user', title: '用户管理', icon: TeamOutlined },
+                { path: pathname, title: '用户中心', icon: UserOutlined })
+        } else if (pathname.includes('/admin/user/settings/')) {
+            list.push(
+                { path: '/admin/user', title: '用户管理', icon: TeamOutlined },
+                { path: pathname, title: '用户设置', icon: SettingOutlined })
+        } else {
             adminRoutes.forEach(item => {
                 if (item.path === pathname) {
                     list.push(item)
@@ -43,16 +57,12 @@ function Layout(props) {
                     if (item.children) {
                         item.children.forEach(children => {
                             if (children.path === pathname) {
-                                list.push(item)
-                                list.push(children)
+                                list.push(item, children)
                             }
                         })
                     }
                 }
             })
-        } else {
-            list.push({ path: '/admin/topic', title: '帖子管理', icon: SnippetsOutlined })
-            list.push({ path: pathname, title: '帖子详情', icon: FileOutlined })
         }
         setBreadcrumbList(list)
     }
@@ -60,19 +70,24 @@ function Layout(props) {
     /**
      * 获取用户信息
      */
-    const getUserInfo = userId => {
-        if (!userId) {
+    const getUserInfo = useCallback(id => {
+        if (!id) {
             message.error('您尚未登录，请先登录再继续操作')
             return history.push('/login')
         } else {
-            getData(userApi.getUserInfo, userId).then(result => {
-                const { code, data } = result.data
-                if (code !== 200) return message.error('')
-                dispatch({ type: ACTIONS.SET_USER_DATA, user: data })
+            getData(userApi.getUserList, { userId: id, page: 1, count: 1 }).then(async result => {
+                const { code, data, msg } = await result.data
+                const { content } = data
+                if (code !== 200) return message.error(msg)
+                dispatch({ type: ACTIONS.SET_USER_DATA, user: content[0] })
                 console.log(user);
+                setRefresh(true)
+            }).catch(error => {
+                message.error('请检查网络状态！')
+                return history.push('/login')
             })
         }
-    }
+    }, [dispatch, history, user])
 
     useEffect(() => {
         setPathname(history.location.pathname)
@@ -82,9 +97,14 @@ function Layout(props) {
         handleBreadcrumbChange(pathname)
     }, [pathname])
 
+    useEffect(() => {
+        const userId = localStorage.getItem('userId')
+        getUserInfo(userId)
+    }, [getUserInfo])
+
     return (
         <AntdLayout className="layout-wrapper">
-            <Header />
+            <Header refresh={refresh} />
 
             <Content style={{ padding: '0 50px' }}>
                 {/* 面包屑 */}

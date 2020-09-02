@@ -16,7 +16,8 @@ import {
     SnippetsOutlined,
     FileZipOutlined,
     DatabaseOutlined,
-    FileOutlined
+    FileOutlined,
+    FormOutlined
 } from '@ant-design/icons'
 
 const DashBoard = loadable({
@@ -31,6 +32,11 @@ const TopicList = loadable({
 
 const TopicInfo = loadable({
     loader: () => import('../pages/TopicManagement/TopicInfo.jsx'),
+    loading: Loading
+})
+
+const TopicEdit = loadable({
+    loader: () => import('../pages/TopicManagement/TopicEdit.jsx'),
     loading: Loading
 })
 
@@ -101,34 +107,43 @@ export const adminRoutes = [{
     title: '帖子管理',
     icon: SnippetsOutlined,
     children: [{
-        path: '/admin/topic/list',
-        component: TopicList,
-        exact: true,
-        isNav: true,
-        title: '帖子列表',
-        icon: ProfileOutlined
-    }, {
-        path: '/admin/topic/reply',
-        component: ReplyList,
-        exact: true,
-        isNav: true,
-        title: '回复列表',
-        icon: ProfileOutlined
-    }, {
-        path: '/admin/topic/attachment',
-        component: AttachmentList,
-        exact: true,
-        isNav: true,
-        title: '附件列表',
-        icon: FileZipOutlined
-    }, {
-        path: '/admin/topic/id/:id',
-        component: TopicInfo,
-        exact: true,
-        isNav: false,
-        title: '帖子详情',
-        icon: FileOutlined
-    }]
+            path: '/admin/topic/list',
+            component: TopicList,
+            exact: true,
+            isNav: true,
+            title: '帖子列表',
+            icon: ProfileOutlined
+        }, {
+            path: '/admin/topic/reply',
+            component: ReplyList,
+            exact: true,
+            isNav: true,
+            title: '回复列表',
+            icon: ProfileOutlined
+        }, {
+            path: '/admin/topic/attachment',
+            component: AttachmentList,
+            exact: true,
+            isNav: true,
+            title: '附件列表',
+            icon: FileZipOutlined
+        }, {
+            path: '/admin/topic/id/:id',
+            component: TopicInfo,
+            exact: true,
+            isNav: false,
+            title: '帖子详情',
+            icon: FileOutlined
+        },
+        {
+            path: '/admin/topic/edit/:id?',
+            component: TopicEdit,
+            exact: true,
+            isNav: false,
+            title: '新建帖子',
+            icon: FormOutlined
+        }
+    ]
 }, {
     path: '/admin/board',
     exact: true,
@@ -164,7 +179,7 @@ export const adminRoutes = [{
             title: '用户列表',
             icon: ProfileOutlined
         }, {
-            path: '/admin/user/center',
+            path: '/admin/user/center/:id',
             component: UserCenter,
             exact: true,
             isNav: false,
@@ -172,7 +187,7 @@ export const adminRoutes = [{
             icon: UserOutlined
         },
         {
-            path: '/admin/user/settings',
+            path: '/admin/user/settings/:id',
             component: UserSettings,
             exact: true,
             isNav: false,

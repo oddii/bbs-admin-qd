@@ -3,8 +3,13 @@ import { Layout as AntdLayout, Avatar, Dropdown, message, Menu, Tooltip } from '
 import { UserOutlined, RollbackOutlined, SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons'
 import { useHistory } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { ACTIONS } from '../../constant'
+
+import userApi from '../../api/user'
+import { postData } from '../../utils/apiMethods'
+import { ACTIONS, CONFIG } from '../../constant'
 import Logo from '../../assets/images/logo.svg'
+
+
 
 const { Header: AntdHeader } = AntdLayout
 
@@ -15,20 +20,22 @@ function Header() {
     const isCollapsed = useSelector(state => state.commonReducer.isCollapsed)
     const userInfo = useSelector(state => state.userReducer)
 
-
     /**
      * @method 信息栏Dropdown菜单点击事件
-     * @param {} key 键 
+     * @param {键} key  
      */
     const handleDropdownMenuOnClick = ({ key }) => {
+        const userId = localStorage.getItem('userId')
         switch (key) {
             case 'center':
-                history.push('/admin/user/center')
+                history.push(`/admin/user/center/${userId}`)
                 break
             case 'settings':
-                history.push('/admin/user/settings')
+                history.push(`/admin/user/settings/${userId}`)
                 break
             case 'logout':
+                postData(userApi.logout)
+                localStorage.removeItem('userId')
                 history.push('/login')
                 break
             default:
@@ -43,7 +50,11 @@ function Header() {
     const dropdownMenu = (
         <Menu onClick={handleDropdownMenuOnClick}>
             <Menu.Item key="center"><UserOutlined /> 个人中心</Menu.Item>
-            <Menu.Item key="settings"><SettingOutlined /> 个人设置</Menu.Item>
+            {
+                userInfo.admin
+                    ? <Menu.Item key="settings"><SettingOutlined /> 个人设置</Menu.Item>
+                    : null
+            }
             <Menu.Divider />
             <Menu.Item key="logout"><RollbackOutlined /> 退出登录</Menu.Item>
         </Menu>
@@ -70,13 +81,28 @@ function Header() {
                         </div>
                     </Tooltip>
                 </div>
-                <div className="header-role">超级版主</div>
+                <div className="header-role">
+                    {
+                        userInfo.admin
+                            ? '管理员'
+                            : userInfo.superBoardAdmin
+                                ? '超级版主'
+                                : userInfo.categoryAdmin
+                                    ? '分区版主'
+                                    : userInfo.boardAdmin
+                                        ? '板块版主'
+                                        : ''
+                    }
+                </div>
                 <Dropdown
                     overlay={dropdownMenu}
                     placement="bottomCenter"
                     arrow>
                     <div className="header-meta">
-                        <Avatar src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png" />
+                        <Avatar src={
+                            userInfo.avatarPath
+                                ? CONFIG.baseUrl + userInfo.avatarPath.substring(1, userInfo.avatarPath.length)
+                                : null} />
                         <div className="meta-usename">
                             {userInfo.nickname}
                         </div>

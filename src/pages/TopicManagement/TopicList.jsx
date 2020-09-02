@@ -23,6 +23,18 @@ const boardNameListfieldNames = {
     children: 'boardList'
 }
 
+const renderAutoCompleteTitle = () => (
+    <div
+        style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            paddingLeft: 12
+        }}>
+        <span>用户名</span>
+        <span>昵称</span>
+    </div>
+)
+
 /**
  * 渲染自动完成选项的 item
  * @param {自动完成选项} item 
@@ -143,21 +155,23 @@ function TopicList() {
         const params = {}
         for (let key in values) {
             if (values.hasOwnProperty(key)) {
-                if (key === 'from' || key === 'to') {
-                    if (values[key]) {
-                        params[key] = moment(values[key]).format('YYYY-MM-DD hh:mm:ss')
+                if (values[key]) {
+                    if (key === 'from' || key === 'to') {
+                        if (values[key]) {
+                            params[key] = moment(values[key]).format('YYYY-MM-DD HH:mm:ss')
+                        }
+                    } else if (key === 'boardId') {
+                        if (values[key]) {
+                            params[key] = values[key][values[key].length - 1]
+                        }
+                    } else {
+                        params[key] = values[key]
                     }
-                } else if (key === 'boardId') {
-                    if (values[key]) {
-                        params[key] = values[key][values[key].length - 1]
-                    }
-                } else {
-                    params[key] = values[key]
                 }
                 commonSetter(key)(values[key])
             }
         }
-        params.page = currentPage
+        params.page = 1
         params.count = pageSize
         getTopicList(params)
     }
@@ -181,7 +195,7 @@ function TopicList() {
             if (searchFormOldValue.hasOwnProperty(key)) {
                 if (searchFormOldValue[key]) {
                     if (key === 'from' || key === 'to') {
-                        params[key] = moment(searchFormOldValue[key]).format('YYYY-MM-DD hh:mm:ss')
+                        params[key] = moment(searchFormOldValue[key]).format('YYYY-MM-DD HH:mm:ss')
                     } else if (key === 'boardId') {
                         params[key] = searchFormOldValue[key][searchFormOldValue[key].length - 1]
                     } else {
@@ -197,6 +211,9 @@ function TopicList() {
         history.push(`/admin/topic/id/${id}`)
     }
 
+    const handleToUserItemInfo = id => {
+        history.push(`/admin/user/center/${id}`)
+    }
 
     /**
      * 表单重置事件
@@ -225,12 +242,13 @@ function TopicList() {
                     action,
                     reason
                 }).then(result => {
-                    const { code } = result.data
-                    if (code !== 200) return message.error('')
+                    const { code, msg } = result.data
+                    if (code !== 200) return message.error(msg)
                     getTopicList({
                         page: currentPage,
                         count: pageSize
                     })
+                    operationForm.setFieldsValue({ action: '', reason: '' })
                     setSelectedRowKeys([])
                     setDrawerVisible(false)
                     message.success('操作成功')
@@ -247,6 +265,7 @@ function TopicList() {
      * 去新建帖子页面
      */
     const handleItemInsert = () => {
+        history.push('/admin/topic/edit')
     }
 
     const rowSelection = {
@@ -281,11 +300,11 @@ function TopicList() {
                     >
                         <Row gutter={24}>
                             <Col span={6} >
-                                <Form.Item name='username' label='上传用户' >
+                                <Form.Item name='username' label='发布用户' >
                                     <AutoComplete
                                         allowClear
                                         dropdownMatchSelectWidth={250}
-                                        options={autoCompleteList}
+                                        options={[{ label: renderAutoCompleteTitle(), options: autoCompleteList }]}
                                         onSearch={debounce(handleAutoComplete, 500)}
                                         placeholder="请输入用户名/用户昵称"
                                     />
@@ -294,7 +313,7 @@ function TopicList() {
 
                             <Col span={6} >
                                 <Form.Item name='keyword' label='关键名词' >
-                                    <Input placeholder="请输入关键名词" />
+                                    <Input placeholder="请输入关键名词" allowClear />
                                 </Form.Item>
                             </Col>
 
@@ -395,7 +414,11 @@ function TopicList() {
                             render={(text, record) =>
                                 <Button type="link" onClick={() => handleToItemInfo(record.id)}>{record.title}</Button>
                             } />
-                        <Column title="发帖用户" dataIndex="submitterNickname" key="submitterNickname" align="center" width={180} ellipsis />
+                        <Column title="发帖用户" dataIndex="submitterUsername" key="submitterUsername" align="center" width={180}
+                            ellipsis
+                            render={(text, record) =>
+                                <Button type="link" onClick={() => handleToUserItemInfo(record.submitterUserId)}>{text}</Button>
+                            } />
                         <Column title="分区名称" dataIndex="categoryName" key="categoryName" align="center" width={180} ellipsis />
                         <Column title="板块名称" dataIndex="boardName" key="boardName" align="center" width={180} ellipsis />
                         <Column
