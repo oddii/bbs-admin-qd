@@ -15,7 +15,6 @@ import {
     ProfileOutlined,
     SnippetsOutlined,
     FileZipOutlined,
-    DatabaseOutlined,
     FileOutlined,
     FormOutlined
 } from '@ant-design/icons'
@@ -80,10 +79,6 @@ const InfoLinkList = loadable({
     loading: Loading
 })
 
-const InfoOperationList = loadable({
-    loader: () => import('../pages/InfoManagement/OperationList.jsx'),
-    loading: Loading
-})
 
 export const mainRoutes = [{
     path: '/login',
@@ -208,12 +203,5 @@ export const adminRoutes = [{
         isNav: true,
         title: '友链列表',
         icon: LinkOutlined
-    }, {
-        path: '/admin/info/operation',
-        component: InfoOperationList,
-        exact: true,
-        isNav: true,
-        title: '操作日志',
-        icon: DatabaseOutlined
     }]
 }]

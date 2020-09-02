@@ -4,12 +4,12 @@ import { Form, Input, Button, Card, message, Spin } from 'antd';
 import { UserOutlined, LockOutlined, CodeOutlined, LoadingOutlined } from '@ant-design/icons';
 
 import { useHistory } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 
 
 import { getData, postData } from '../../utils/apiMethods'
 import userApi from '../../api/user'
-import { ACTIONS, REGEXP } from '../../constant'
+import { ACTIONS, REGEXP, CONFIG } from '../../constant'
 import './index.scss'
 
 const loadingKey = 'loading'
@@ -18,7 +18,6 @@ function Login() {
 
     const history = useHistory()
     const dispatch = useDispatch()
-    const user = useSelector(state => state.userReducer)
 
     const [verifyCodeImg, setVerifyCodeImg] = useState('')
     const [verifyCodeRandom, setVerifyCodeRandom] = useState('123')
@@ -27,12 +26,15 @@ function Login() {
      * 获取验证码图片
      */
     const getVerifyCodeImg = () => {
+        setVerifyCodeImg('')
         getData(userApi.refreshCode).then(result => {
-            const { code, data } = result.data
+            const { code, data, msg } = result.data
+            if (code !== 200) return message.error(msg)
 
-            if (code !== 200) return message.error('')
-            setVerifyCodeImg(data.url)
+            setVerifyCodeImg(CONFIG.baseUrl + data.url.substring(1, data.url.length))
             setVerifyCodeRandom(data.verifyCodeRandom)
+        }).catch(() => {
+            message.error('获取验证码失败，请稍后再试！')
         })
     }
 
@@ -42,6 +44,7 @@ function Login() {
      */
     const login = values => {
         message.loading({ content: '正在登录...', key: loadingKey })
+
         const { username, password, verifyCode } = values
         postData(userApi.login, {
             username,
@@ -56,8 +59,6 @@ function Login() {
                     || errorData.password || errorData.verifyCode)
                 return message.error(msg)
             }
-
-            console.log(data);
 
             const { id, permission } = data
             const { admin, boardAdmin, categoryAdmin, superBoardAdmin } = permission
@@ -110,7 +111,7 @@ function Login() {
      */
     const codeImgOrLoading = () => {
         return verifyCodeImg
-            ? (<img src={verifyCodeImg} alt="" onClick={() => getVerifyCodeImg()} />)
+            ? (<img style={{ width: 100, height: 30 }} src={verifyCodeImg} alt="" onClick={() => getVerifyCodeImg()} />)
             : (<Spin indicator={loadingIcon} />)
     }
 

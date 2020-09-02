@@ -245,7 +245,6 @@ function AttachmentList() {
         let { filename, downloadUrl } = item
         downloadUrl = CONFIG.baseUrl + downloadUrl.substring(1, downloadUrl.length)
         downloadFile(filename, downloadUrl)
-        getData()
     }
 
     /**
@@ -423,7 +422,7 @@ function AttachmentList() {
                     visible={modalVisible}
                     maskClosable={false}
                     onCancel={() => setModalVisible(false)}
-                    footer={<Button type="primary">下载</Button>}
+                    footer={<Button type="primary" onClick={() => handleItemDownload(attachmentInfo)} >下载</Button>}
                 >
                     <div>
                         <Descriptions bordered>

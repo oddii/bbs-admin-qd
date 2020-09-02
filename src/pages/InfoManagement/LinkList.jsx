@@ -156,7 +156,7 @@ function InfoLinkList() {
                   <div className="list-item-meta">
                     <div className="item-name">{item.name}</div>
                     <div className="item-description">{item.description}</div>
-                    <div className="item-url"><a href={item.url} target="_blank">{item.url}</a></div>
+                    <div className="item-url"><a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a></div>
                     <div className="item-time">创建时间：{item.createTime}</div>
                     <div className="item-time">更新时间：{item.updateTime}</div>
                   </div>

@@ -186,13 +186,21 @@ function Center() {
                     content:
                         (<>
                             <div className="replyed-content">
-                                {item.shortContent}
+                                回贴内容：{
+                                    item.shortContent
+                                        ? item.shortContent
+                                        : item.content
+                                }
                                 <div className="border-topleft"></div>
                                 <div className="border-topleft2"></div>
                                 <div className="border-bottomright"></div>
                                 <div className="border-bottomright2"></div>
                             </div>
-                            {/* <div className="reply-content">回贴内容：{item.shortContent}</div> */}
+                            {/* <div className="reply-content">回贴内容：{
+                                item.shortContent
+                                    ? item.shortContent
+                                    : item.content
+                            }</div> */}
                             <div style={{ marginTop: 8 }}>回复时间：{item.replyTime}</div>
                         </>)
                 })
@@ -473,7 +481,7 @@ function Center() {
                             tabBarExtraContent={localUserInfo.admin ? slot : null}>
 
                             <TabPane
-                                tab={<div>我的主题 <span className="meta-count">{userInfo.topicCount}</span></div>}
+                                tab={<div>我的主题 <span className="meta-count">{topicListTotal}</span></div>}
                                 key="1" >
                                 <List
                                     itemLayout="vertical"
@@ -516,7 +524,7 @@ function Center() {
                             </TabPane>
 
                             <TabPane
-                                tab={<div>我的回复 <span className="meta-count">{userInfo.replyCount}</span></div>}
+                                tab={<div>我的回复 <span className="meta-count">{replyListTotal}</span></div>}
                                 key="2">
                                 <List
                                     itemLayout="vertical"

@@ -5,7 +5,7 @@ import {
     SettingOutlined
 } from '@ant-design/icons';
 import { useHistory } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 
 import userApi from '../api/user'
 import { getData } from '../utils/apiMethods'
@@ -24,7 +24,6 @@ function Layout(props) {
 
     const history = useHistory()
     const dispatch = useDispatch()
-    const user = useSelector(state => state.userReducer)
     const [refresh, setRefresh] = useState(false)
 
     const [pathname, setPathname] = useState(history.location.pathname)
@@ -80,14 +79,14 @@ function Layout(props) {
                 const { content } = data
                 if (code !== 200) return message.error(msg)
                 dispatch({ type: ACTIONS.SET_USER_DATA, user: content[0] })
-                console.log(user);
+
                 setRefresh(true)
             }).catch(error => {
                 message.error('请检查网络状态！')
                 return history.push('/login')
             })
         }
-    }, [dispatch, history, user])
+    }, [dispatch, history])
 
     useEffect(() => {
         setPathname(history.location.pathname)

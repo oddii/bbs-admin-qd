@@ -1,17 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
     PageHeader, Tag, Button, Badge, Descriptions, Statistic, Card, Table,
-    List, Popconfirm, message, Upload, Avatar
+    List, message, Avatar, Modal
 } from 'antd';
 import {
-    RollbackOutlined, EditOutlined, FileZipOutlined, DeleteOutlined, DownloadOutlined,
-    UploadOutlined
+    RollbackOutlined, EditOutlined, FileZipOutlined
 } from '@ant-design/icons'
 import { useHistory, useParams } from 'react-router-dom'
 
+// 引入编辑器组件
+import BraftEditor from 'braft-editor'
+// 引入编辑器样式
+import 'braft-editor/dist/index.css'
+
+import { downloadFile } from '../../utils/utils'
 import topicApi from '../../api/topic'
-import attachmentApi from '../../api/attachment'
-import { getData } from '../../utils/apiMethods'
+import replyApi from '../../api/reply'
+import { getData, postData } from '../../utils/apiMethods'
 import { CONFIG } from '../../constant'
 import filesize from 'filesize'
 import './index.scss'
@@ -27,14 +32,39 @@ function TopicInfo() {
     const history = useHistory()
 
     const [topicInfo, setTopicInfo] = useState({})
-    const [topicOperation, setTopicOperation] = useState([])
 
+    const [topicReplyList, setTopicReplyList] = useState([])
+    const [toplicReplyListCurrentPage, setTopicReplyListCurrentPage] = useState(1)
+    const [toplicReplyListPageSize, setTopicReplyListPageSize] = useState(10)
+    const [toplicReplyListTotal, setTopicReplyListTotal] = useState(0)
+
+    const [topicReplyInfo, setTopicReplyInfo] = useState({})
+    const [editorState, setEditorState] = useState(BraftEditor.createEditorState(null))
+    const [editorReadOnly, setEditorReadOnly] = useState(true)
+    const [topicReplyInfoModalVisible, setTopicReplyInfoModalVisible] = useState(false)
+
+    const [topicOperation, setTopicOperation] = useState([])
 
     const getTopicInfo = useCallback(id => {
         getData(topicApi.getTopicInfo, { topicId: id }).then(result => {
             const { code, data, msg } = result.data
             if (code !== 200) return message.error(msg)
             setTopicInfo(data)
+        }).catch(() => {
+            message.error('服务器出现错误，请稍后再试')
+        })
+    }, [])
+
+    const getTopicReplyList = useCallback(params => {
+        getData(replyApi.getReplyList, params).then(result => {
+            const { code, data, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            setTopicReplyList(data.content)
+            setTopicReplyListCurrentPage(data.currentPage)
+            setTopicReplyListPageSize(data.pageSize)
+            setTopicReplyListTotal(data.totalRecords)
+        }).catch(() => {
+            message.error('服务器出现错误，请稍后再试')
         })
     }, [])
 
@@ -43,8 +73,50 @@ function TopicInfo() {
             const { code, data, msg } = result.data
             if (code !== 200) return message.error(msg)
             setTopicOperation(data)
+        }).catch(() => {
+            message.error('服务器出现错误，请稍后再试')
         })
     }, [])
+
+    /**
+     * 列表项查看详情事件
+     * @param {列表项} item 
+     */
+    const handleToReplyItemInfo = item => {
+        setTopicReplyInfo(item)
+        setEditorState(BraftEditor.createEditorState(item.content))
+        setTopicReplyInfoModalVisible(true)
+    }
+
+
+    const handleTopicReplyInfoModalCancel = () => {
+        setTopicReplyInfoModalVisible(false)
+        setEditorReadOnly(true)
+    }
+
+    const handleTopicReplyInfoModalSubmit = () => {
+        postData(replyApi.updateReply, {
+            replyId: topicReplyInfo.id,
+            content: editorState.toHTML()
+        }).then(result => {
+            const { code, msg } = result.data
+            if (code !== 200) return message.error(msg)
+            message.success('更新成功')
+            getTopicReplyList({
+                topicId: id,
+                count: toplicReplyListPageSize,
+                page: toplicReplyListCurrentPage
+            })
+            setEditorReadOnly(true)
+            setTopicReplyInfoModalVisible(false)
+        })
+    }
+
+    const handleItemDownload = item => {
+        let { filename, downloadUrl } = item
+        downloadUrl = CONFIG.baseUrl + downloadUrl.substring(1, downloadUrl.length)
+        downloadFile(filename, downloadUrl)
+    }
 
     const handleToUserItemInfo = id => {
         history.push(`/admin/user/center/${id}`)
@@ -54,14 +126,15 @@ function TopicInfo() {
         history.push(`/admin/topic/edit/${id}`)
     }
 
-    const handleAttachmentItemDelete = item => {
-        message.success(`成功删除名称为 “${item.filename}” 的附件！`)
-    }
-
     useEffect(() => {
         getTopicInfo(id)
+        getTopicReplyList({
+            topicId: id,
+            count: toplicReplyListPageSize,
+            page: toplicReplyListCurrentPage
+        })
         getTopicOperation(id)
-    }, [getTopicInfo, getTopicOperation, id])
+    }, [getTopicInfo, getTopicOperation, getTopicReplyList, id, toplicReplyListCurrentPage, toplicReplyListPageSize])
 
     return (
         <div className="topic-info-wrapper">
@@ -74,9 +147,21 @@ function TopicInfo() {
                                 ? CONFIG.baseUrl + topicInfo.submitterAvatarPath.substring(1, topicInfo.submitterAvatarPath.length)
                                 : null} />
                         <span style={{ margin: '0 16px 0 0', fontSize: 20, color: '#000', fontWeight: 600 }}>{topicInfo.title}</span>
-                        <Tag color="blue">普通帖子</Tag>
-                        <Badge style={{ marginRight: '16px' }} status="processing" text="置顶" />
-                        <Badge status="success" text="精华" />
+                        {
+                            topicInfo.type === 0
+                                ? <Tag color="blue">普通帖子</Tag>
+                                : <Tag >公告</Tag>
+                        }
+                        {
+                            topicInfo.pinned
+                                ? <Badge style={{ marginRight: '16px' }} status="processing" text="置顶" />
+                                : null
+                        }
+                        {
+                            topicInfo.featured
+                                ? <Badge status="success" text="精华" />
+                                : null
+                        }
                     </>
                 }
                 extra={[
@@ -137,21 +222,11 @@ function TopicInfo() {
                         <List.Item>
                             <Card
                                 hoverable
-                                actions={[
-                                    <div><DownloadOutlined key="download" /> 下载</div>,
-                                    <Popconfirm
-                                        title="删除后不可恢复，您确认删除本项吗？"
-                                        onConfirm={() => handleAttachmentItemDelete(item)}
-                                        okText="是的！"
-                                        cancelText="我再想想..."
-                                    >
-                                        <div><DeleteOutlined key="delete" /> 删除</div>
-                                    </Popconfirm>
-                                ]}
                             >
                                 <div className="list-item-wrapper">
                                     <div className="item-filename">
-                                        <FileZipOutlined /> {item.filename}
+                                        <span><FileZipOutlined /> {item.filename}</span>
+                                        <span className="btn-download" onClick={() => handleItemDownload(item)}>下载</span>
                                     </div>
                                     <div className="item-description">{item.description}</div>
                                     <div className="item-filepath">路径：<span>{item.downloadUrl}</span></div>
@@ -175,6 +250,49 @@ function TopicInfo() {
                 title="回复"
                 style={{ margin: '24px 0' }}>
 
+                <Table
+                    rowKey="id"
+                    dataSource={topicReplyList}
+                    pagination={{
+                        current: toplicReplyListCurrentPage,
+                        pageSize: toplicReplyListPageSize,
+                        total: toplicReplyListTotal,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total) => `Total ${total} items`,
+                        onChange: (currentPage, pageSize) => getTopicReplyList({ topicId: id, page: currentPage, count: pageSize })
+                    }}>
+                    <Column
+                        title="#"
+                        key="index"
+                        align="center"
+                        width={65}
+                        render={(text, record, index) => index + 1} />
+                    <Column title="回复内容" dataIndex="content" key="content" align="center" ellipsis />
+                    <Column title="回复用户" dataIndex="replierUsername" key="replierUsername" align="center" width={180}
+                        ellipsis
+                        render={(text, record) =>
+                            <Button type="link" onClick={() => handleToUserItemInfo(record.replierUserId)}>{text}</Button>
+                        } />
+                    <Column title="回复时间" dataIndex="replyTime" key="replyTime" align="center" width={180} />
+                    <Column title="最后编辑用户" dataIndex="editorUsername" key="editorUsername" align="center" width={180}
+                        ellipsis
+                        render={(text, record) =>
+                            <Button type="link" onClick={() => handleToUserItemInfo(record.editorUserId)}>{text}</Button>
+                        } />
+                    <Column title="最后编辑时间" dataIndex="editTime" key="editTime" align="center" width={180} />
+                    <Column
+                        title="操作"
+                        key="action"
+                        align="center"
+                        width={65}
+                        render={(text, record) => (
+                            <>
+                                <span className="btn-option" onClick={() => handleToReplyItemInfo(record)}>详情</span>
+                            </>
+                        )}
+                    />
+                </Table>
             </Card>
 
             <Card
@@ -183,12 +301,7 @@ function TopicInfo() {
                 <Table
                     rowKey="id"
                     dataSource={topicOperation}
-                    pagination={{
-                        total: 85,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total) => `Total ${total} items`
-                    }}>
+                    pagination={false}>
                     <Column
                         title="#"
                         key="index"
@@ -205,6 +318,42 @@ function TopicInfo() {
                     <Column title="操作时间" dataIndex="operateTime" key="operateTime" align="center" width={180} />
                 </Table>
             </Card>
+
+            <Modal
+                title="回复详情"
+                className="reply-info-wrapper"
+                width={1200}
+                visible={topicReplyInfoModalVisible}
+                maskClosable={false}
+                onCancel={() => handleTopicReplyInfoModalCancel()}
+                footer={
+                    editorReadOnly ?
+                        <Button onClick={() => setEditorReadOnly(false)}>编辑</Button>
+                        : <Button type="primary" onClick={handleTopicReplyInfoModalSubmit}>提交</Button>
+                }
+            >
+                <div>
+                    <Descriptions bordered>
+                        <Descriptions.Item label="主题帖名称" span={3}>{topicReplyInfo.topicTitle}</Descriptions.Item>
+                        <Descriptions.Item label="回复时间" span={1.5}>{topicReplyInfo.replyTime}</Descriptions.Item>
+                        <Descriptions.Item label="最后编辑时间" span={1.5}>{topicReplyInfo.editTime}</Descriptions.Item>
+                        <Descriptions.Item label="回复用户">{topicReplyInfo.replierUsername}</Descriptions.Item>
+                        <Descriptions.Item label="回复用户昵称">{topicReplyInfo.replierNickname}</Descriptions.Item>
+                        <Descriptions.Item label="回复用户Ip">{topicReplyInfo.replierIp}</Descriptions.Item>
+                        <Descriptions.Item label="最后编辑用户">{topicReplyInfo.editorUsername}</Descriptions.Item>
+                        <Descriptions.Item label="最后编辑用户昵称">{topicReplyInfo.editorNickname}</Descriptions.Item>
+                        <Descriptions.Item label="最后编辑用户Ip">{topicReplyInfo.editorIp}</Descriptions.Item>
+                    </Descriptions>
+
+                    <div style={{ marginTop: 10 }}>
+                        <BraftEditor
+                            value={editorState}
+                            readOnly={editorReadOnly}
+                            onChange={editorState => setEditorState(editorState)}
+                        />
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }

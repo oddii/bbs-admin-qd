@@ -8,5 +8,6 @@ export default {
     delTolic: '/api/topic/delete-topic', //  删除主题帖
     updateTolic: '/api/topic/update-topic', //  修改主题帖
     manageTolic: '/api/topic/manage-topic', //  主题帖管理（单个+批量）
+    getTopicReplyList: '/api/reply/topic-reply-list', //  获取指定主题帖的回复帖
     getTopicOperation: '/api/topic/topic-operation-log' //  获取主题帖操纵记录
 }

@@ -1,13 +1,29 @@
-.topic-info-wrapper {}
+.topic-info-wrapper {
+    .list-item-wrapper {
+        .item-filename {
+            display: flex;
+            justify-content: space-between;
+
+            .btn-download{
+                color: #1890ff;
+                font-weight: 400;
+                font-size: 14px;
+            }
+        }
+    }
+}
+
+
 
 .topic-info-wrapper,
 .topic-edit-wrapper {
     .list-item-wrapper {
         word-break: break-word;
-        .btn-delete{
+
+        .btn-delete {
             color: #ff4d4f;
         }
-
+    
         .item-filename {
             font-size: 15px;
             font-weight: 600;
@@ -56,8 +72,6 @@
         }
     }
 }
-
-.reply-info-wrapper {}
 
 .topic-insert-wrapper {
     .input-item {

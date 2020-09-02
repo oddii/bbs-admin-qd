@@ -10,7 +10,6 @@ import { useSelector, useDispatch } from 'react-redux'
 import { getData, postData } from '../../utils/apiMethods'
 import userApi from '../../api/user'
 import boardApi from '../../api/board'
-import attachmentApi from '../../api/attachment'
 import { ACTIONS, CONFIG } from '../../constant'
 
 import './index.scss'
