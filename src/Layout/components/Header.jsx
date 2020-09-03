@@ -34,9 +34,16 @@ function Header() {
                 history.push(`/admin/user/settings/${userId}`)
                 break
             case 'logout':
-                postData(userApi.logout)
-                localStorage.removeItem('userId')
-                history.push('/login')
+                postData(userApi.logout).then(async result => {
+                    const { code } = await result.data
+                    if (code === 200) {
+                        message.success('退出成功！')
+                        localStorage.removeItem('userId')
+                        history.push('/login')
+                    } else {
+                        message.error('退出失败！')
+                    }
+                })
                 break
             default:
                 message.info('你点击了' + key + '按钮')

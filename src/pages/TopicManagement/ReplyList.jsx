@@ -398,7 +398,7 @@ function ReplyList() {
                             render={(text, record) =>
                                 <Button type="link" onClick={() => handleToTopicItemInfo(record)}>{record.topicTitle}</Button>
                             } />
-                        <Column title="回复内容" dataIndex="content" key="content" align="center" ellipsis />
+                        <Column title="回复内容" dataIndex="shortContent" key="shortContent" align="center" ellipsis />
                         <Column title="回复用户" dataIndex="replierUsername" key="replierUsername" align="center" width={180}
                             ellipsis
                             render={(text, record) =>

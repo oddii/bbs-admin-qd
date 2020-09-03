@@ -76,8 +76,8 @@ function Layout(props) {
         } else {
             getData(userApi.getUserList, { userId: id, page: 1, count: 1 }).then(async result => {
                 const { code, data, msg } = await result.data
-                const { content } = data
                 if (code !== 200) return message.error(msg)
+                const { content } = data
                 dispatch({ type: ACTIONS.SET_USER_DATA, user: content[0] })
 
                 setRefresh(true)

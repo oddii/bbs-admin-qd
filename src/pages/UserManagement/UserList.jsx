@@ -363,7 +363,7 @@ function UserList() {
             })
 
         } else if (adminInsertModalType === 'category') {
-            if (categorySelectId) return message.error('请选择管理分区')
+            if (!categorySelectId) return message.error('请选择管理分区')
             let categoryIdList = userInfo.categoryAdmin.map(item => item.id).concat(categorySelectId)
             postData(userApi.updateCategoryAdmin, {
                 userId: userInfo.id,

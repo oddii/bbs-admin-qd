@@ -20,7 +20,8 @@ export const REGEXP = {
 
 export const CONFIG = {
     // baseUrl: 'http://rap2.taobao.org:38080/app/mock/263117',
-    baseUrl: 'http://forum.frp.wegfan.cn/',
+    // baseUrl: 'http://forum.frp.wegfan.cn/',
+    baseUrl: 'http://forum-admin.wegfan.cn/',
     ctxJsonHeader: {
         'Content-Type': 'application/json;charset=UTF-8'
     },

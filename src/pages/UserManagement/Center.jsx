@@ -127,14 +127,14 @@ function Center() {
 
                 getReplyList({
                     username: content[0].username,
-                    count: topicListPageSize,
-                    page: topicListCurrentPage
+                    count: replyListPageSize,
+                    page: replyListCurrentPage
                 })
             }).catch(() => {
                 message.error('服务器出现错误，请稍后再试')
             })
         }
-    }, [dispatch, history, localUserInfo.admin, localUserInfo.id, topicListCurrentPage, topicListPageSize])
+    }, [dispatch, history, localUserInfo.admin, localUserInfo.id, replyListCurrentPage, replyListPageSize, topicListCurrentPage, topicListPageSize])
 
     /**
      * 获取指定用户的主题帖列表
@@ -156,7 +156,10 @@ function Center() {
                         (item.type === 0 ? <Tag color="blue">普通帖子</Tag> : <Tag>公告</Tag>),
                     content:
                         (<>
-                            <div>{item.shortContent}</div>
+                            <div style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}>{item.shortContent}</div>
                             <div>
                                 发布在<Button type="link">{item.boardName}</Button>板块，
                                 <Button type="link">{item.categoryName}</Button>分区，<span>{item.submitTime}</span>
@@ -270,7 +273,7 @@ function Center() {
             })
 
         } else if (adminInsertModalType === 'category') {
-            if (categorySelectId) return message.error('请选择管理分区')
+            if (!categorySelectId) return message.error('请选择管理分区')
             let categoryIdList = userInfo.categoryAdmin.map(item => item.id).concat(categorySelectId)
             postData(userApi.updateCategoryAdmin, {
                 userId: userInfo.id,
@@ -423,7 +426,9 @@ function Center() {
                         : null}>
                 <Row gutter={16}>
                     {/* 左侧 */}
-                    <Col flex="0 1 300px" className="user-meta-wrapper">
+                    <Col span={5}
+                        // flex="0 1 300px"
+                        className="user-meta-wrapper">
                         <div className="user-meta">
                             <Avatar
                                 className="meta-avatar"
@@ -474,7 +479,10 @@ function Center() {
                     </Col>
 
                     {/* 右侧 */}
-                    <Col flex="1" className="user-extend-wrapper">
+                    <Col
+                        span={19}
+                        //  flex="1" 
+                        className="user-extend-wrapper">
                         <Tabs
                             defaultActiveKey="1"
                             onChange={handleTabsActiveKeyChange}
